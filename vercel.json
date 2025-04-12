@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/scheduled-backup/check?key=BACKUP_API_SECRET",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 23 * * *"
     }
   ]
 }
