@@ -1,9 +1,9 @@
 "use client"
 
+import { useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useCallback } from "react"
 import Image from "next/image"
 
 // Export ifadesini default export olarak değiştirin

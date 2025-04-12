@@ -16,8 +16,8 @@ interface IsletmeHaritasiProps {
 
 export function IsletmeHaritasi({ isletmeler }: IsletmeHaritasiProps) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const [loading, setLoading] = useState(true)
   const [mapLoaded, setMapLoaded] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // Google Maps yükleme
   useEffect(() => {
@@ -38,7 +38,6 @@ export function IsletmeHaritasi({ isletmeler }: IsletmeHaritasiProps) {
   useEffect(() => {
     if (mapLoaded && mapRef.current) {
       setLoading(true)
-
       try {
         // Türkiye'nin merkezi
         const turkeyCenter = { lat: 39.0, lng: 35.0 }
@@ -101,7 +100,6 @@ export function IsletmeHaritasi({ isletmeler }: IsletmeHaritasiProps) {
           }
         }
       } catch (error) {
-        console.error("Harita yüklenirken hata:", error)
       } finally {
         setLoading(false)
       }
@@ -119,10 +117,8 @@ export function IsletmeHaritasi({ isletmeler }: IsletmeHaritasiProps) {
           <div id="map" ref={mapRef} className="w-full h-full rounded-md"></div>
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 rounded-md">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-600" />
-                <p className="text-gray-600">Harita yükleniyor...</p>
-              </div>
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-600" />
+              <p className="text-gray-600">Harita yükleniyor...</p>
             </div>
           )}
         </div>

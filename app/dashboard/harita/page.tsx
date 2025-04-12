@@ -75,7 +75,7 @@ export default function HaritaSayfasi() {
     fetchIsletmeler()
   }, [searchTerm, selectedCity])
 
-  // Google Maps yükleme
+  // Google Maps yükleme ve harita oluşturma
   useEffect(() => {
     if (!window.google && !document.getElementById("google-maps-script")) {
       const script = document.createElement("script")
@@ -84,14 +84,7 @@ export default function HaritaSayfasi() {
       script.async = true
       script.defer = true
       script.onload = () => setMapLoaded(true)
-      document.head.appendChild(script)
-    } else if (window.google) {
-      setMapLoaded(true)
     }
-  }, [])
-
-  // Harita oluşturma
-  useEffect(() => {
     if (mapLoaded && !map) {
       // Türkiye'nin merkezi
       const turkeyCenter = { lat: 39.0, lng: 35.0 }
@@ -103,7 +96,6 @@ export default function HaritaSayfasi() {
         streetViewControl: false,
         fullscreenControl: true,
       })
-
       setMap(mapInstance)
     }
   }, [mapLoaded, map])

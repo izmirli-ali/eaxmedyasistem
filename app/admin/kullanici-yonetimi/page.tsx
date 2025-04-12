@@ -9,14 +9,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { Loader2, Search, Edit, Trash2, UserPlus, AlertCircle, Download, CheckCircle } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
@@ -31,6 +24,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { Switch } from "@/components/ui/switch"
+import { DialogFooter } from "@/components/ui/dialog"
 
 export default function KullaniciYonetimiPage() {
   const { toast } = useToast()

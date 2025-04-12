@@ -1,5 +1,4 @@
 // Supabase ile ilgili yardımcı fonksiyonlar
-
 import { createClient } from "@/lib/supabase/client"
 import type { IsletmeType, MusteriType } from "./supabase-schema"
 

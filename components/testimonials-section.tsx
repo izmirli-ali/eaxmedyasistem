@@ -60,7 +60,7 @@ export function TestimonialsSection() {
 
                 <div className="flex items-center">
                   <Avatar className="h-10 w-10 mr-3">
-                    <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+                    <AvatarImage src={testimonial.avatar || "/placeholder.svg"} alt={testimonial.name} />
                     <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 import { runScheduledBackup } from "@/lib/scheduled-backup"
+import { createClient } from "@/lib/supabase/server" // Import createClient
 
 export async function GET(request: NextRequest) {
   try {

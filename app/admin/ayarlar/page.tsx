@@ -285,17 +285,17 @@ ALTER TABLE public.site_ayarlari ENABLE ROW LEVEL SECURITY;
 -- Admin kullanıcıları için politikalar
 CREATE POLICY "Adminler site ayarlarını okuyabilir" ON public.site_ayarlari
 FOR SELECT USING (
-  auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
+ auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
 );
 
 CREATE POLICY "Adminler site ayarlarını güncelleyebilir" ON public.site_ayarlari
 FOR UPDATE USING (
-  auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
+ auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
 );
 
 CREATE POLICY "Adminler site ayarlarını ekleyebilir" ON public.site_ayarlari
 FOR INSERT WITH CHECK (
-  auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
+ auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
 );`}
                   </pre>
                 </div>
@@ -499,22 +499,22 @@ ALTER TABLE public.backups ENABLE ROW LEVEL SECURITY;
 -- Admin kullanıcıları için politikalar
 CREATE POLICY "Adminler yedeklemeleri görüntüleyebilir" ON public.backups
 FOR SELECT USING (
-  auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
+ auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
 );
 
 CREATE POLICY "Adminler yedekleme ekleyebilir" ON public.backups
 FOR INSERT WITH CHECK (
-  auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
+ auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
 );
 
 CREATE POLICY "Adminler yedekleme güncelleyebilir" ON public.backups
 FOR UPDATE USING (
-  auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
+ auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
 );
 
 CREATE POLICY "Adminler yedekleme silebilir" ON public.backups
 FOR DELETE USING (
-  auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
+ auth.uid() IN (SELECT id FROM public.kullanicilar WHERE rol = 'admin')
 );`}
                   </pre>
                   <p className="mt-4 text-sm text-gray-600">
