@@ -36,23 +36,32 @@ export default function SeoMeta({
   const defaultDescription = siteSettings?.seo_description || siteSettings?.site_aciklama || "İşletme yönetim sistemi"
   const defaultKeywords = siteSettings?.seo_keywords || "işletme yönetimi, işletme listesi, işletme rehberi"
 
-  // İşletme adı, kategori ve şehir bilgisi varsa, SEO başlığını ve açıklamasını güncelle
-  const finalTitle = title
-    ? `${title} | ${defaultTitle}`
-    : isletmeAdi && kategori && sehir
-      ? `${isletmeAdi} - ${sehir} ${kategori} | ${defaultTitle}`
-      : defaultTitle
-
-  const finalDescription = description
-    ? description
-    : isletmeAdi && kategori && sehir
-      ? `${isletmeAdi}, ${sehir} bölgesinde hizmet veren en iyi ${kategori} işletmesidir. İletişim: ${siteSettings?.iletisim_telefon}`
-      : defaultDescription
-
-  const finalKeywords = keywords || defaultKeywords
-
   // Canonical URL
-  const canonicalUrl = ogUrl || (typeof window !== "undefined" ? window.location.href : "")
+  const canonicalUrl =
+    ogUrl ||
+    (typeof window !== "undefined"
+      ? window.location.href
+      : `${process.env.NEXT_PUBLIC_SITE_URL || ""}/isletme/${isletmeData?.id || ""}`)
+
+  // SEO başlığı ve açıklamasını işletme verilerinden daha akıllı bir şekilde oluşturalım
+  const finalTitle = isletmeData?.seo_baslik
+    ? isletmeData.seo_baslik
+    : title
+      ? `${title} | ${defaultTitle}`
+      : isletmeAdi && kategori && sehir
+        ? `${isletmeAdi} - ${sehir} ${kategori} | ${defaultTitle}`
+        : defaultTitle
+
+  const finalDescription = isletmeData?.seo_aciklama
+    ? isletmeData.seo_aciklama
+    : description
+      ? description
+      : isletmeAdi && kategori && sehir
+        ? `${isletmeAdi}, ${sehir} bölgesinde hizmet veren en iyi ${kategori} işletmesidir. İletişim: ${isletmeData?.telefon || siteSettings?.iletisim_telefon || ""}`
+        : defaultDescription
+
+  // Anahtar kelimeleri işletme verilerinden daha akıllı bir şekilde oluşturalım
+  const finalKeywords = isletmeData?.seo_anahtar_kelimeler || keywords || defaultKeywords
 
   // JSON-LD yapılandırılmış veri
   let structuredData = null

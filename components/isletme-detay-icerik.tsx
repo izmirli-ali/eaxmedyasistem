@@ -2,7 +2,7 @@
 import type React from "react"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import {
   Phone,
   Mail,
@@ -16,6 +16,7 @@ import {
   Youtube,
   ChevronLeft,
   ChevronRight,
+  MessageCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
@@ -29,23 +30,20 @@ interface IsletmeDetayIcerikProps {
   isletme: any
 }
 
-// Declare google variable
+// Google Maps API'nin yüklenmesi için global callback tanımlaması ekleyelim
 declare global {
   interface Window {
     google: any
+    initGoogleMapsCallback: () => void
   }
 }
 
 export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
-  const [position, setPosition] = useState(null)
   const [allReviews, setAllReviews] = useState([])
   const [reviews, setReviews] = useState([])
-  const [mapRef, setMapRef] = useState<HTMLDivElement | null>(null)
-  const [mapLoaded, setMapLoaded] = useState(false)
-  const [images, setImages] = useState<string[]>([])
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [reviewsError, setReviewsError] = useState<string | null>(null)
-  const [emblaRef, emblaApi] = useState<any>(null)
+  const [images, setImages] = useState<string[]>([])
   const [currentReviewPage, setCurrentReviewPage] = useState(1)
   const reviewsPerPage = 5
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -63,50 +61,17 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
 
   // Ekran okuyucular için slayt durumu
   const sliderStatusRef = useRef<HTMLDivElement>(null)
+  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null)
 
   const supabase = createClient()
 
-  useEffect(() => {
-    if (isletme?.koordinatlar) {
-      const [latitude, longitude] = isletme.koordinatlar.split(",").map(Number)
-      if (!isNaN(latitude) && !isNaN(longitude)) {
-        setPosition([latitude, longitude])
-      }
-    }
-  }, [isletme])
-
-  useEffect(() => {
-    if (!window.google && !document.getElementById("google-maps-script")) {
-      const script = document.createElement("script")
-      script.id = "google-maps-script"
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
-      script.async = true
-      script.defer = true
-      script.onload = () => setMapLoaded(true)
-      document.head.appendChild(script)
-    } else if (window.google) {
-      setMapLoaded(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (mapLoaded && position && mapRef) {
-      const map = new window.google.maps.Map(mapRef, {
-        center: { lat: position[0], lng: position[1] },
-        zoom: 15,
-      })
-
-      new window.google.maps.Marker({
-        position: { lat: position[0], lng: position[1] },
-        map: map,
-        title: isletme.isletme_adi,
-      })
-    }
-  }, [mapLoaded, position, isletme, mapRef])
-
-  // Google Haritalar yorumlarını getirme
+  // fetchReviews fonksiyonunu aşağıdaki şekilde değiştirelim:
   const fetchReviews = async () => {
-    if (!isletme?.koordinatlar) return
+    if (!isletme?.koordinatlar) {
+      setReviewsLoading(false)
+      setReviewsError("Koordinat bilgisi bulunamadı.")
+      return
+    }
 
     setReviewsLoading(true)
     setReviewsError(null)
@@ -117,49 +82,84 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
         throw new Error("Geçersiz koordinatlar")
       }
 
-      // Place ID'yi almak için Places API'yi kullan
-      if (window.google && window.google.maps) {
-        const placesService = new window.google.maps.places.PlacesService(document.createElement("div"))
-        placesService.findPlaceFromQuery(
-          {
-            query: isletme.isletme_adi,
-            locationBias: { lat: latitude, lng: longitude },
-            fields: ["place_id"],
-          },
-          (results, status) => {
-            if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-              const placeId = results[0].place_id
-
-              // Place Details API'yi kullanarak yorumları al
-              placesService.getDetails(
-                {
-                  placeId: placeId,
-                  fields: ["reviews"],
-                },
-                (place, detailsStatus) => {
-                  if (detailsStatus === window.google.maps.places.PlacesServiceStatus.OK && place) {
-                    // Tüm yorumları sakla
-                    setAllReviews(place.reviews || [])
-
-                    // 3 ve üzeri puanı olan yorumları filtrele
-                    const filteredReviews = (place.reviews || []).filter((review) => review.rating >= 3)
-                    setReviews(filteredReviews)
-                  } else {
-                    setReviewsError("Yorumlar yüklenirken bir hata oluştu.")
-                  }
-                  setReviewsLoading(false)
-                },
-              )
-            } else {
-              setReviewsError("İşletme bulunamadı veya yorumlar yüklenemedi.")
-              setReviewsLoading(false)
+      // Google Maps API'nin yüklenip yüklenmediğini kontrol et
+      if (typeof window === "undefined" || !window.google || !window.google.maps || !window.google.maps.places) {
+        // Google Maps API'yi dinamik olarak yükle
+        const loadGoogleMapsAPI = () => {
+          return new Promise((resolve, reject) => {
+            // Eğer zaten yüklenmişse, hemen resolve et
+            if (window.google && window.google.maps && window.google.maps.places) {
+              return resolve(window.google)
             }
-          },
-        )
-      } else {
-        setReviewsError("Google Maps API yüklenemedi.")
-        setReviewsLoading(false)
+
+            // API yükleme durumunu kontrol etmek için global bir callback tanımla
+            window.initGoogleMapsCallback = () => {
+              if (window.google && window.google.maps && window.google.maps.places) {
+                resolve(window.google)
+              } else {
+                reject(new Error("Google Maps API yüklenemedi."))
+              }
+              // Callback'i temizle
+              delete window.initGoogleMapsCallback
+            }
+
+            // API'yi dinamik olarak yükle
+            const script = document.createElement("script")
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMapsCallback`
+            script.async = true
+            script.defer = true
+            script.onerror = () => {
+              reject(new Error("Google Maps API yüklenirken hata oluştu."))
+              delete window.initGoogleMapsCallback
+            }
+            document.head.appendChild(script)
+          })
+        }
+
+        // API'yi yüklemeyi dene
+        await loadGoogleMapsAPI()
       }
+
+      // API yüklendikten sonra yorumları getir
+      const placesService = new window.google.maps.places.PlacesService(document.createElement("div"))
+      placesService.findPlaceFromQuery(
+        {
+          query: isletme.isletme_adi,
+          locationBias: { lat: latitude, lng: longitude },
+          fields: ["place_id"],
+        },
+        (results, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+            const placeId = results[0].place_id
+
+            // Place Details API'yi kullanarak yorumları al
+            placesService.getDetails(
+              {
+                placeId: placeId,
+                fields: ["reviews"],
+              },
+              (place, detailsStatus) => {
+                if (detailsStatus === window.google.maps.places.PlacesServiceStatus.OK && place) {
+                  // Tüm yorumları sakla
+                  setAllReviews(place.reviews || [])
+
+                  // 3 ve üzeri puanı olan yorumları filtrele
+                  const filteredReviews = (place.reviews || []).filter((review) => review.rating >= 3)
+                  setReviews(filteredReviews)
+                  setReviewsLoading(false)
+                } else {
+                  setReviewsError("Yorumlar yüklenirken bir hata oluştu: " + detailsStatus)
+                  setReviewsLoading(false)
+                }
+              },
+            )
+          } else {
+            setReviewsError(`İşletme bulunamadı veya yorumlar yüklenemedi. Durum: ${status}`)
+            setReviewsLoading(false)
+          }
+        },
+      )
     } catch (error) {
       console.error("Yorumlar yüklenirken hata:", error)
       setReviewsError(error.message || "Yorumlar yüklenirken bir hata oluştu.")
@@ -167,19 +167,30 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
     }
   }
 
+  const memoizedFetchReviews = useCallback(fetchReviews, [isletme?.koordinatlar, isletme?.isletme_adi])
+
+  // useEffect içindeki fetchReviews çağrısını değiştirelim
   useEffect(() => {
-    fetchReviews()
+    // Sayfa yüklendiğinde yorumları getir
+    if (isletme?.koordinatlar) {
+      // API yükleme hatalarını önlemek için kısa bir gecikme ekleyelim
+      const timer = setTimeout(() => {
+        memoizedFetchReviews()
+      }, 1000)
+
+      return () => clearTimeout(timer)
+    }
 
     // Her gün saat 23:00'da yorumları yenile
     const intervalId = setInterval(() => {
       const now = new Date()
       if (now.getHours() === 23 && now.getMinutes() === 0) {
-        fetchReviews()
+        memoizedFetchReviews()
       }
     }, 60 * 1000) // Her dakika kontrol et
 
     return () => clearInterval(intervalId)
-  }, [isletme])
+  }, [memoizedFetchReviews, isletme?.koordinatlar])
 
   // İşletme fotoğraflarını yükle
   useEffect(() => {
@@ -187,17 +198,6 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
       setImages(isletme.fotograflar)
     }
   }, [isletme])
-
-  // Yol tarifi URL'si oluşturma
-  const getDirectionsUrl = () => {
-    if (position) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${position[0]},${position[1]}`
-    }
-    return ""
-  }
-
-  // Sosyal medya ikonları
-  const sosyalMedya = isletme.sosyal_medya || {}
 
   // Sayfa sayısı
   const totalReviewPages = Math.ceil(reviews.length / reviewsPerPage)
@@ -214,31 +214,167 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
     }
   }
 
+  // Sosyal medya verilerini tanımla
+  const sosyalMedya = {
+    facebook: isletme.facebook_url || null,
+    instagram: isletme.instagram_url || null,
+    twitter: isletme.twitter_url || null,
+    linkedin: isletme.linkedin_url || null,
+    youtube: isletme.youtube_url || null,
+  }
+
+  // İşletme detay sayfasında yapısal veri iyileştirmeleri için koordinat bilgilerini kullanalım
+
+  // Koordinat bilgilerini işleyelim ve yapısal veriye ekleyelim
+  useEffect(() => {
+    if (isletme?.koordinatlar) {
+      try {
+        const [lat, lng] = isletme.koordinatlar.split(",").map(Number)
+        if (!isNaN(lat) && !isNaN(lng)) {
+          // Koordinat bilgilerini state'e ekleyelim
+          setCoordinates({ latitude: lat, longitude: lng })
+        }
+      } catch (error) {
+        console.error("Koordinat bilgileri işlenirken hata:", error)
+      }
+    }
+  }, [isletme])
+
+  // Yapısal veri için koordinat bilgilerini ekleyelim
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: isletme.isletme_adi,
+    image: isletme.fotograf_url || "/placeholder.svg",
+    telephone: isletme.telefon,
+    email: isletme.email || "",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: isletme.adres || "",
+      addressLocality: isletme.ilce || "",
+      addressRegion: isletme.sehir || "",
+      addressCountry: "Türkiye",
+    },
+    // Koordinat bilgilerini ekleyelim
+    ...(coordinates && {
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+      },
+    }),
+    // Diğer bilgileri ekleyelim
+    priceRange: isletme.fiyat_araligi || "₺₺",
+    url: typeof window !== "undefined" ? window.location.href : "",
+    openingHours: isletme.calisma_saatleri || "",
+    // Hizmetleri ekleyelim
+    ...(isletme.sunulan_hizmetler && {
+      makesOffer: parseHizmetler(isletme.sunulan_hizmetler).map((service) => ({
+        "@type": "Offer",
+        itemOffered: {
+          "@type": "Service",
+          name: service,
+        },
+      })),
+    }),
+  }
+
+  // Sosyal medya paylaşım butonlarını iyileştirelim
+
+  // Sosyal medya paylaşım butonları
+  const SocialShareButtons = ({ url, title, description }) => {
+    return (
+      <div className="flex space-x-2 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank")
+          }
+          aria-label="Facebook'ta paylaş"
+        >
+          <Facebook className="h-4 w-4 mr-2" />
+          Paylaş
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            window.open(
+              `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
+              "_blank",
+            )
+          }
+          aria-label="Twitter'da paylaş"
+        >
+          <Twitter className="h-4 w-4 mr-2" />
+          Tweet
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(title + " " + url)}`, "_blank")
+          }
+          aria-label="WhatsApp'ta paylaş"
+        >
+          <MessageCircle className="h-4 w-4 mr-2" />
+          WhatsApp
+        </Button>
+      </div>
+    )
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    // Mobil uyumluluk için responsive tasarım iyileştirmeleri
+
+    // Mobil cihazlarda daha iyi görünüm için
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+      {/* İşletme Fotoğrafı */}
+      {isletme.fotograf_url && (
+        <Card className="mb-6">
+          <CardContent className="p-0">
+            <div className="relative aspect-video overflow-hidden rounded-md">
+              <Image
+                src={isletme.fotograf_url || "/placeholder.svg?height=300&width=400"}
+                alt={`${isletme.isletme_adi} ana görseli`}
+                fill
+                className="object-cover"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {/* Google Harita Embed */}
+      {isletme.harita_linki && (
+        <Card className="mb-6">
+          <CardContent className="p-0">
+            <div className="w-full">
+              <iframe
+                src={isletme.harita_linki}
+                width="100%"
+                height="450"
+                style={{ border: 0 }}
+                allowFullScreen={true}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title={`${isletme.isletme_adi} Google Haritası`}
+              ></iframe>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Sol Kolon - Detaylar */}
       <div>
         {/* İşletme Fotoğrafı */}
-        {isletme.fotograf_url && (
-          <Card className="mb-6">
-            <CardContent className="p-0">
-              <div className="relative aspect-video overflow-hidden rounded-md">
-                <Image
-                  src={isletme.fotograf_url || "/placeholder.svg?height=300&width=400"}
-                  alt={`${isletme.isletme_adi} ana görseli`}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* İşletme Fotoğrafları - Slider */}
         {images.length > 0 && (
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <h3 className="text-xl font-bold mb-4" id="galeri-baslik">
+          <Card className="mb-4 md:mb-6 col-span-1 md:col-span-2">
+            <CardContent className="p-3 md:p-4">
+              <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4" id="galeri-baslik">
                 Fotoğraf Galerisi
               </h3>
               <div className="relative">
@@ -428,8 +564,6 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
             </div>
           </CardContent>
         </Card>
-
-        {/* Sosyal Medya Hesapları */}
         {Object.keys(sosyalMedya).length > 0 && (
           <Card className="mb-6">
             <CardContent className="p-6">
@@ -496,67 +630,14 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
             </CardContent>
           </Card>
         )}
+        {/* Bileşeni kullanma */}
+        <SocialShareButtons
+          url={typeof window !== "undefined" ? window.location.href : ""}
+          title={isletme.isletme_adi}
+          description={isletme.aciklama || `${isletme.isletme_adi} - ${isletme.kategori || ""}`}
+        />
       </div>
-
-      {/* Sağ Kolon - Harita ve Yorumlar */}
       <div>
-        <Card className="mb-6">
-          <CardContent className="p-0">
-            {position ? (
-              <>
-                <div
-                  ref={(node) => setMapRef(node)}
-                  style={{ height: "300px", width: "100%" }}
-                  className="rounded-md"
-                  aria-label={`${isletme.isletme_adi} konumu haritası`}
-                  role="application"
-                />
-                <div className="p-4 flex justify-center">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                  >
-                    <a
-                      href={getDirectionsUrl()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-6"
-                      aria-label={`${isletme.isletme_adi} için yol tarifi al`}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="animate-pulse"
-                        aria-hidden="true"
-                      >
-                        <path d="M9 20l-5.5-5.5a7.78 7.78 0 0 1 0-11 7.78 7.78 0 0 1 11 0L16 5"></path>
-                        <path d="M15 4l1 1"></path>
-                        <path d="M18 7l1 1"></path>
-                        <path d="M19 11l1 1"></path>
-                        <path d="M20 15l1 1"></path>
-                        <path d="M5 19l-1-1"></path>
-                      </svg>
-                      Yol Tarifi Al
-                    </a>
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="h-48 bg-gray-100 flex items-center justify-center text-gray-500" role="alert">
-                Konum bilgisi bulunmamaktadır.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Google Haritalar Yorumları */}
         <Card>
           <CardContent className="p-6">
@@ -569,8 +650,12 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
                 <span className="sr-only">Yorumlar yükleniyor...</span>
               </div>
             ) : reviewsError ? (
-              <div className="text-red-500" role="alert">
-                {reviewsError}
+              <div className="p-4 border border-red-200 bg-red-50 rounded-md" role="alert">
+                <p className="text-red-600 font-medium mb-2">Yorumlar yüklenemedi</p>
+                <p className="text-red-500 text-sm">{reviewsError}</p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => fetchReviews()}>
+                  Tekrar Dene
+                </Button>
               </div>
             ) : reviews.length > 0 ? (
               <>

@@ -1,4 +1,13 @@
+# İyileştirilmiş robots.txt dosyası
 User-agent: *
 Allow: /
 
+# Özel sayfaları engelle
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+
+# Sitemap
 Sitemap: https://isletmenionecikar.com/sitemap.xml
+
+# Crawl-delay: 10

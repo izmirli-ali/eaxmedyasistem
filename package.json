@@ -62,6 +62,7 @@
     "@supabase/ssr": "latest",
     "uuid": "latest",
     "turndown": "latest",
+    "qrcode": "latest",
     "keen-slider": "latest"
   },
   "devDependencies": {

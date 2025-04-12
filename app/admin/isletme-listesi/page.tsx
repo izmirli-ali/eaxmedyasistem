@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, Edit, Trash2, Eye, Plus, RefreshCw, AlertCircle, Download } from "lucide-react"
+import { Loader2, Search, Edit, Trash2, Eye, Plus, RefreshCw, AlertCircle, Download, QrCode } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Pagination,
@@ -30,6 +30,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import Link from "next/link"
+import QRCode from "qrcode"
 
 export default function IsletmeListesiPage() {
   const router = useRouter()
@@ -261,6 +262,39 @@ export default function IsletmeListesiPage() {
     document.body.removeChild(link)
   }
 
+  // QR kod oluşturma ve indirme fonksiyonu
+  const generateAndDownloadQRCode = async (isletme) => {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://isletmenionecikar.com"
+    const googleMapsRedirectUrl = `${baseUrl}/api/google-maps-redirect?id=${isletme.id}`
+
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(googleMapsRedirectUrl, {
+        errorCorrectionLevel: "H",
+        margin: 2,
+        width: 256,
+        color: {
+          dark: "#000",
+          light: "#fff",
+        },
+      })
+
+      // İndirme bağlantısı oluştur
+      const downloadLink = document.createElement("a")
+      downloadLink.href = qrCodeDataUrl
+      downloadLink.download = `${isletme.isletme_adi}-qr-code.png`
+      document.body.appendChild(downloadLink)
+      downloadLink.click()
+      document.body.removeChild(downloadLink)
+    } catch (error) {
+      console.error("QR Code oluşturulurken hata:", error)
+      toast({
+        title: "Hata",
+        description: "QR Code oluşturulurken bir hata oluştu.",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div className="container mx-auto py-6">
       {/* Başlık ve Butonlar */}
@@ -417,6 +451,9 @@ export default function IsletmeListesiPage() {
                                 Siteye Göz At
                               </Button>
                             </Link>
+                            <Button variant="secondary" size="sm" onClick={() => generateAndDownloadQRCode(isletme)}>
+                              <QrCode className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

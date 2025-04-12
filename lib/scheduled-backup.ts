@@ -12,13 +12,13 @@ const TABLES_TO_BACKUP = ["isletmeler", "kullanicilar", "musteriler", "site_ayar
 // Son 10 yedeklemeyi sakla, diğerlerini temizle
 const MAX_BACKUPS_TO_KEEP = 10
 
-/**
- * Otomatik yedekleme işlemini başlatır
- * @returns Yedekleme sonucu
- */
+// Yedekleme işlemini daha güvenli hale getirelim
 export async function runScheduledBackup() {
   try {
     console.log("Otomatik yedekleme başlatılıyor...")
+
+    // Yedekleme işlemi başlamadan önce sistem log kaydı oluştur
+    await logBackupActivity("start", "Otomatik yedekleme başlatıldı")
 
     // Yeni yedekleme başlat
     const backup = await startBackup(TABLES_TO_BACKUP)
@@ -28,6 +28,9 @@ export async function runScheduledBackup() {
     // Eski yedeklemeleri temizle
     await cleanupOldBackups()
 
+    // Başarılı yedekleme log kaydı
+    await logBackupActivity("success", `Otomatik yedekleme tamamlandı: ${backup.id}`)
+
     return {
       success: true,
       backupId: backup.id,
@@ -35,11 +38,35 @@ export async function runScheduledBackup() {
     }
   } catch (error) {
     console.error("Otomatik yedekleme hatası:", error)
+
+    // Hata log kaydı
+    await logBackupActivity("error", `Otomatik yedekleme hatası: ${error.message}`)
+
     return {
       success: false,
       error: error.message || "Bilinmeyen hata",
       message: "Otomatik yedekleme başlatılırken hata oluştu",
     }
+  }
+}
+
+// Yedekleme aktivitesini logla
+async function logBackupActivity(status, message) {
+  const supabase = createClient()
+
+  try {
+    await supabase.from("system_logs").insert([
+      {
+        action: "scheduled_backup",
+        status,
+        details: {
+          message,
+          timestamp: new Date().toISOString(),
+        },
+      },
+    ])
+  } catch (error) {
+    console.error("Yedekleme log kaydı oluşturulurken hata:", error)
   }
 }
 

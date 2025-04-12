@@ -2,6 +2,9 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { ClientLayout } from "./ClientLayout"
 
+// Google Analytics ve diğer izleme kodlarını ekleyelim
+import { Analytics } from "@/components/analytics"
+
 // SEO için metadata tanımlamaları
 export const metadata: Metadata = {
   title: "İşletmeni Öne Çıkar | Google Haritalar Optimizasyonu",
@@ -51,12 +54,18 @@ export const viewport: Viewport = {
   themeColor: "#4f46e5",
 }
 
+// Layout içine Analytics bileşenini ekleyelim
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  return <ClientLayout>{children}</ClientLayout>
+  return (
+    <ClientLayout>
+      {children}
+      <Analytics />
+    </ClientLayout>
+  )
 }
 
 

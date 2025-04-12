@@ -1,33 +1,23 @@
 "use client"
 
 import { Textarea } from "@/components/ui/textarea"
-
 import { Input } from "@/components/ui/input"
-
 import { Label } from "@/components/ui/label"
-
 import { Button } from "@/components/ui/button"
-
 import { CardContent } from "@/components/ui/card"
-
 import { CardDescription } from "@/components/ui/card"
-
 import { CardTitle } from "@/components/ui/card"
-
 import { CardHeader } from "@/components/ui/card"
-
 import { Card } from "@/components/ui/card"
-
-import { TabsContent } from "@/components/ui/tabs"
-
-import { Tabs } from "@/components/ui/tabs"
-
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useState } from "react"
-
 // ... (Diğer importlar)
 import { generateSeoSuggestions } from "@/utils/seo-helpers"
+import { Wand2 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function IsletmeKayitPage() {
+  const { toast } = useToast()
   // ... (Diğer state'ler)
   const [formData, setFormData] = useState({
     // ... (Diğer form alanları)
@@ -37,6 +27,12 @@ export default function IsletmeKayitPage() {
     url_slug: "",
   })
 
+  const [loading, setLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [supabase, setSupabase] = useState(null) // You'll likely need to initialize this properly
+
+  const [activeTab, setActiveTab] = useState("detay-bilgiler")
+
   // Form gönderimi
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -45,6 +41,7 @@ export default function IsletmeKayitPage() {
 
     try {
       // ... (Diğer form işlemleri)
+      const validatedFormData = formData // Assuming you have validation logic elsewhere
 
       // İşletmeyi ekle
       const { data, error } = await supabase
@@ -52,8 +49,8 @@ export default function IsletmeKayitPage() {
         .insert([
           {
             ...validatedFormData,
-            fotograf_url: imageUrl,
-            kullanici_id: userId,
+            fotograf_url: "imageUrl", // Replace with actual imageUrl if needed
+            kullanici_id: "userId", // Replace with actual userId if needed
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
@@ -70,7 +67,14 @@ export default function IsletmeKayitPage() {
       // ... (Hata işlemleri)
     } finally {
       // ... (Finally işlemleri)
+      setLoading(false)
+      setIsSubmitting(false)
     }
+  }
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   return (
