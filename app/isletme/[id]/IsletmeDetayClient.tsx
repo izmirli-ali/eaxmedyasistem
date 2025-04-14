@@ -7,10 +7,11 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, ChevronLeft } from "@/components/ui/icons"
+import { MapPin } from "@/components/ui/icons"
 import SeoMeta from "@/components/seo-meta"
 import { IsletmeDetayIcerik } from "@/components/isletme-detay-icerik"
 import { parseHizmetler } from "@/lib/supabase-utils"
+import { isValidUUID } from "@/utils/validation-helpers"
 
 interface Props {
   params: { id: string }
@@ -31,6 +32,11 @@ export default function IsletmeDetayClient({ params }: Props) {
     try {
       setLoading(true)
       setError(null)
+
+      // ID'nin geçerli bir UUID olup olmadığını kontrol et
+      if (!isValidUUID(params.id)) {
+        throw new Error("Geçersiz işletme ID'si. Lütfen geçerli bir işletme seçin.")
+      }
 
       const { data, error } = await supabase.from("isletmeler").select("*").eq("id", params.id).single()
 
@@ -76,7 +82,8 @@ export default function IsletmeDetayClient({ params }: Props) {
       setSiteSettings(data)
     } catch (error) {
       console.error("Site ayarları yüklenirken hata:", error.message)
-      setError(error.message)
+      // Site ayarları yüklenemese bile uygulamanın çalışmasına izin ver
+      setSiteSettings({}) // Boş bir nesne ile devam et
     }
   }, [supabase])
 
@@ -95,6 +102,16 @@ export default function IsletmeDetayClient({ params }: Props) {
   // Geri dönme işlemi
   const handleBack = useCallback(() => {
     router.back()
+  }, [router])
+
+  // İşletme listesine dönme işlemi
+  const handleGoToList = useCallback(() => {
+    router.push("/isletme-listesi")
+  }, [router])
+
+  // Ana sayfaya dönme işlemi
+  const handleGoToHome = useCallback(() => {
+    router.push("/")
   }, [router])
 
   // Sayfa URL'sini oluştur
@@ -136,19 +153,21 @@ export default function IsletmeDetayClient({ params }: Props) {
     )
   }
 
-  if (error || !isletme || !siteSettings) {
+  if (error || !isletme) {
     return (
       <div className="container mx-auto max-w-6xl py-12 px-4" aria-live="polite">
         <Card>
           <CardContent className="p-8 text-center">
             <h2 className="text-2xl font-bold mb-4">İşletme bulunamadı</h2>
             <p className="text-gray-600 mb-6">
-              Aradığınız işletme bulunamadı veya bir hata oluştu. Lütfen daha sonra tekrar deneyin.
+              {error || "Aradığınız işletme bulunamadı veya bir hata oluştu. Lütfen daha sonra tekrar deneyin."}
             </p>
-            <Button onClick={handleBack}>
-              <ChevronLeft className="mr-2 h-4 w-4" aria-hidden="true" />
-              Ana Sayfaya Dön
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={handleGoToList} variant="outline">
+                İşletme Listesine Dön
+              </Button>
+              <Button onClick={handleGoToHome}>Ana Sayfaya Dön</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -172,7 +191,7 @@ export default function IsletmeDetayClient({ params }: Props) {
         isletmeAdi={isletme.isletme_adi}
         kategori={isletme.kategori}
         sehir={isletme.sehir}
-        siteSettings={siteSettings}
+        siteSettings={siteSettings || {}} // Varsayılan boş nesne
         isletmeData={isletme}
         faqData={faqData}
       />

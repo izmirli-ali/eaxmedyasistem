@@ -1,168 +1,133 @@
-/**
- * Veri doğrulama yardımcı fonksiyonları
- */
-
-// Telefon numarası doğrulama
-export function validatePhone(phone: string): { valid: boolean; formatted?: string; message?: string } {
-  // Boş değer kontrolü
-  if (!phone) return { valid: false, message: "Telefon numarası gereklidir" }
-
-  // Sadece rakamları al
-  const digits = phone.replace(/\D/g, "")
-
-  // Türkiye telefon numarası formatı kontrolü (10 veya 11 rakam)
-  if (digits.length === 10) {
-    // 10 haneli numara (başında 0 olmadan)
-    return {
-      valid: true,
-      formatted: digits.replace(/(\d{3})(\d{3})(\d{4})/, "0$1 $2 $3"),
-    }
-  } else if (digits.length === 11 && digits.startsWith("0")) {
-    // 11 haneli numara (başında 0 ile)
-    return {
-      valid: true,
-      formatted: digits.replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, "$1$2 $3 $4"),
-    }
-  } else if (digits.length >= 10) {
-    // En az 10 rakam varsa, son 10 rakamı al ve formatla
-    const lastTenDigits = digits.slice(-10)
-    return {
-      valid: true,
-      formatted: "0" + lastTenDigits.replace(/(\d{3})(\d{3})(\d{4})/, "$1 $2 $3"),
-    }
-  }
-
-  return {
-    valid: false,
-    message: "Geçerli bir telefon numarası giriniz (0555 555 5555 formatında)",
-  }
-}
-
-// E-posta doğrulama
-export function validateEmail(email: string): { valid: boolean; message?: string } {
-  if (!email) return { valid: true } // E-posta zorunlu değil
-
+// Email doğrulama fonksiyonu
+export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) {
-    return { valid: false, message: "Geçerli bir e-posta adresi giriniz" }
-  }
-
-  return { valid: true }
+  return emailRegex.test(email)
 }
 
-// Web sitesi doğrulama
-export function validateWebsite(website: string): { valid: boolean; formatted?: string; message?: string } {
-  if (!website) return { valid: true } // Web sitesi zorunlu değil
+// Telefon numarası doğrulama fonksiyonu
+export function validatePhone(phone: string): boolean {
+  // Türkiye telefon numarası formatı: +90 5XX XXX XX XX veya 05XX XXX XX XX
+  const phoneRegex = /^(\+90|0)?\s*5\d{2}\s*\d{3}\s*\d{2}\s*\d{2}$/
+  return phoneRegex.test(phone)
+}
 
-  // URL formatı kontrolü
-  let formattedWebsite = website
+// Şifre doğrulama fonksiyonu
+export function validatePassword(password: string): boolean {
+  // En az 8 karakter, en az bir büyük harf, bir küçük harf ve bir rakam
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+  return passwordRegex.test(password)
+}
 
-  // http:// veya https:// ile başlamıyorsa ekle
-  if (!/^https?:\/\//i.test(website)) {
-    formattedWebsite = "https://" + website
-  }
-
+// URL doğrulama fonksiyonu
+export function validateURL(url: string): boolean {
   try {
-    new URL(formattedWebsite)
-    return { valid: true, formatted: formattedWebsite }
+    new URL(url)
+    return true
   } catch (e) {
-    return { valid: false, message: "Geçerli bir web sitesi adresi giriniz" }
+    return false
   }
 }
 
-// Koordinat doğrulama
-export function validateCoordinates(coordinates: string): { valid: boolean; message?: string } {
-  // Boş veya undefined değer kontrolü
-  if (!coordinates || coordinates.trim() === "") return { valid: true }
-
-  // Koordinat formatı: "enlem,boylam" (örn: "41.0082,28.9784")
-  const coordRegex = /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/
-
-  if (!coordRegex.test(coordinates)) {
-    return { valid: false, message: "Koordinatlar 'enlem,boylam' formatında olmalıdır (örn: 41.0082,28.9784)" }
-  }
-
-  // Değerlerin geçerli aralıkta olup olmadığını kontrol et
-  const [lat, lng] = coordinates.split(",").map(Number)
-
-  if (lat < -90 || lat > 90) {
-    return { valid: false, message: "Enlem değeri -90 ile 90 arasında olmalıdır" }
-  }
-
-  if (lng < -180 || lng > 180) {
-    return { valid: false, message: "Boylam değeri -180 ile 180 arasında olmalıdır" }
-  }
-
-  return { valid: true }
+// UUID doğrulama fonksiyonu
+export function isValidUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  return uuidRegex.test(uuid)
 }
 
-// Adres doğrulama
-export function validateAddress(address: string): { valid: boolean; message?: string } {
-  if (!address) return { valid: true } // Adres zorunlu değil
-
-  if (address.length < 10) {
-    return { valid: false, message: "Adres çok kısa, lütfen tam adresi giriniz" }
-  }
-
-  return { valid: true }
+// Boş değer kontrolü
+export function isEmpty(value: string | null | undefined): boolean {
+  return value === null || value === undefined || value.trim() === ""
 }
 
-// Tüm form verilerini doğrula
-export function validateFormData(formData: any): {
-  isValid: boolean
-  errors: Record<string, string>
-  formattedData: any
-} {
-  const errors: Record<string, string> = {}
-  const formattedData = { ...formData }
+// Minimum uzunluk kontrolü
+export function minLength(value: string, length: number): boolean {
+  return value.length >= length
+}
 
-  // İşletme adı kontrolü
-  if (!formData.isletme_adi || formData.isletme_adi.trim().length < 2) {
-    errors.isletme_adi = "İşletme adı en az 2 karakter olmalıdır"
+// Maksimum uzunluk kontrolü
+export function maxLength(value: string, length: number): boolean {
+  return value.length <= length
+}
+
+// Sayı kontrolü
+export function isNumber(value: string): boolean {
+  return !isNaN(Number(value))
+}
+
+// Pozitif sayı kontrolü
+export function isPositiveNumber(value: string): boolean {
+  const num = Number(value)
+  return !isNaN(num) && num > 0
+}
+
+// Tarih formatı kontrolü (YYYY-MM-DD)
+export function isValidDate(dateString: string): boolean {
+  const regex = /^\d{4}-\d{2}-\d{2}$/
+  if (!regex.test(dateString)) return false
+
+  const date = new Date(dateString)
+  return date instanceof Date && !isNaN(date.getTime())
+}
+
+// Türkçe karakter içerip içermediğini kontrol et
+export function containsTurkishChars(text: string): boolean {
+  const turkishChars = /[çğıöşüÇĞİÖŞÜ]/
+  return turkishChars.test(text)
+}
+
+// Sadece harf ve rakam içerip içermediğini kontrol et
+export function isAlphanumeric(text: string): boolean {
+  const alphanumericRegex = /^[a-zA-Z0-9]+$/
+  return alphanumericRegex.test(text)
+}
+
+// Sadece harf içerip içermediğini kontrol et
+export function isAlphabetic(text: string): boolean {
+  const alphabeticRegex = /^[a-zA-Z]+$/
+  return alphabeticRegex.test(text)
+}
+
+// TC Kimlik Numarası doğrulama
+export function validateTCKN(tckn: string): boolean {
+  if (!/^[0-9]{11}$/.test(tckn)) return false
+
+  const digits = tckn.split("").map(Number)
+
+  // İlk 10 hane için algoritma kontrolü
+  const odd = digits[0] + digits[2] + digits[4] + digits[6] + digits[8]
+  const even = digits[1] + digits[3] + digits[5] + digits[7]
+  const digit10 = (odd * 7 - even) % 10
+
+  // Son hane için algoritma kontrolü
+  const sum = digits.slice(0, 10).reduce((acc, val) => acc + val, 0)
+  const digit11 = sum % 10
+
+  return digit10 === digits[9] && digit11 === digits[10]
+}
+
+// Kredi kartı numarası doğrulama (Luhn algoritması)
+export function validateCreditCard(cardNumber: string): boolean {
+  // Boşlukları kaldır
+  const sanitized = cardNumber.replace(/\s+/g, "")
+
+  if (!/^\d+$/.test(sanitized)) return false
+  if (sanitized.length < 13 || sanitized.length > 19) return false
+
+  // Luhn algoritması
+  let sum = 0
+  let double = false
+
+  for (let i = sanitized.length - 1; i >= 0; i--) {
+    let digit = Number.parseInt(sanitized.charAt(i))
+
+    if (double) {
+      digit *= 2
+      if (digit > 9) digit -= 9
+    }
+
+    sum += digit
+    double = !double
   }
 
-  // Telefon kontrolü
-  const phoneResult = validatePhone(formData.telefon)
-  if (!phoneResult.valid) {
-    errors.telefon = phoneResult.message || "Geçerli bir telefon numarası giriniz"
-  } else if (phoneResult.formatted) {
-    formattedData.telefon = phoneResult.formatted
-  }
-
-  // E-posta kontrolü
-  const emailResult = validateEmail(formData.email)
-  if (!emailResult.valid) {
-    errors.email = emailResult.message || "Geçerli bir e-posta adresi giriniz"
-  }
-
-  // Web sitesi kontrolü
-  const websiteResult = validateWebsite(formData.website)
-  if (!websiteResult.valid) {
-    errors.website = websiteResult.message || "Geçerli bir web sitesi adresi giriniz"
-  } else if (websiteResult.formatted) {
-    formattedData.website = websiteResult.formatted
-  }
-
-  // Koordinat kontrolü
-  const coordResult = validateCoordinates(formData.koordinatlar)
-  if (!coordResult.valid) {
-    errors.koordinatlar = coordResult.message || "Geçerli koordinatlar giriniz"
-  }
-
-  // Adres kontrolü
-  const addressResult = validateAddress(formData.adres)
-  if (!addressResult.valid) {
-    errors.adres = addressResult.message || "Geçerli bir adres giriniz"
-  }
-
-  // Şehir kontrolü
-  if (!formData.sehir) {
-    errors.sehir = "Şehir seçimi zorunludur"
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-    formattedData,
-  }
+  return sum % 10 === 0
 }
