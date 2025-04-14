@@ -9,9 +9,14 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Yönlendirmeler ekleyelim
   async redirects() {
     return [
+      // Eski /isletme/[id] formatındaki URL'leri /isletme/[sehir]/[slug] formatına yönlendir
+      {
+        source: '/isletme/:id',
+        destination: '/isletme/:sehir/:slug',
+        permanent: true,
+      },
       // Admin sayfasına erişim için yönlendirme
       {
         source: '/admin',
