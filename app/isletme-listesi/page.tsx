@@ -1,4 +1,45 @@
-"use client"
+// İşletme listesi sayfasını güncelleyelim - filtreleme desteği ekleyelim
+import { Suspense } from "react"
+import IsletmeListesiClientComponent from "./IsletmeListesiClient"
+import { Skeleton } from "@/components/ui/skeleton"
+
+export default function IsletmeListesi({
+  searchParams,
+}: {
+  searchParams?: {
+    sehir?: string
+    kategori?: string
+    q?: string
+  }
+}) {
+  return (
+    <Suspense fallback={<IsletmeListesiSkeleton />}>
+      <IsletmeListesiClientComponent
+        sehirFilter={searchParams?.sehir}
+        kategoriFilter={searchParams?.kategori}
+        searchQuery={searchParams?.q}
+      />
+    </Suspense>
+  )
+}
+
+function IsletmeListesiSkeleton() {
+  return (
+    <div className="container mx-auto py-8">
+      <div className="mb-6">
+        <Skeleton className="h-10 w-64" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array(6)
+          .fill(0)
+          .map((_, i) => (
+            <Skeleton key={i} className="h-64 rounded-lg" />
+          ))}
+      </div>
+    </div>
+  )
+}
+;("use client")
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -11,15 +52,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Building, Search, Filter, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
-export default function IsletmeListesi() {
+export default function IsletmeListesiClientComponent({sehirFilter, kategoriFilter, searchQuery}) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [isletmeler, setIsletmeler] = useState([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "")
-  const [selectedCity, setSelectedCity] = useState(searchParams.get("sehir") || "")
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("kategori") || "")
+  const [searchTerm, setSearchTerm] = useState(searchQuery || "")
+  const [selectedCity, setSelectedCity] = useState(sehirFilter || "")
+  const [selectedCategory, setSelectedCategory] = useState(kategoriFilter || "")
   const [cities, setCities] = useState([])
   const [categories, setCategories] = useState([])
   const [showFilters, setShowFilters] = useState(false)
@@ -193,7 +234,7 @@ export default function IsletmeListesi() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isletmeler.length > 0 ? (
             isletmeler.map((isletme) => (
-              <Link key={isletme.id} href={`/isletme/${isletme.id}`} className="block group">
+              <Link key={isletme.id} href={`/isletme/${isletme.url_slug}`} className="block group">
                 <Card className="overflow-hidden h-full transition-all duration-300 hover:shadow-lg">
                   <div className="h-48 overflow-hidden">
                     {isletme.fotograf_url ? (
