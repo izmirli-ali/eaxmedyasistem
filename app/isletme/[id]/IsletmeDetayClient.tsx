@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin } from "@/components/ui/icons"
+import { MapPin, ChevronLeft } from "lucide-react"
 import SeoMeta from "@/components/seo-meta"
 import { IsletmeDetayIcerik } from "@/components/isletme-detay-icerik"
 import { parseHizmetler } from "@/lib/supabase-utils"
@@ -122,25 +122,6 @@ export default function IsletmeDetayClient({ params }: Props) {
     return `${process.env.NEXT_PUBLIC_SITE_URL || "https://isletmenionecikar.com"}/isletme/${params.id}`
   }, [params.id])
 
-  // Paylaşım işlevi
-  const handleShare = useCallback(() => {
-    if (navigator.share) {
-      navigator
-        .share({
-          title: isletme?.isletme_adi || "İşletme Detayı",
-          text: isletme?.aciklama || "İşletme detaylarını görüntüleyin",
-          url: getPageUrl(),
-        })
-        .catch((error) => console.log("Paylaşım hatası:", error))
-    } else {
-      // Kopyala-yapıştır alternatifi
-      navigator.clipboard
-        .writeText(getPageUrl())
-        .then(() => alert("Bağlantı panoya kopyalandı!"))
-        .catch((err) => console.error("Kopyalama hatası:", err))
-    }
-  }, [isletme, getPageUrl])
-
   if (loading) {
     return (
       <div className="container mx-auto max-w-6xl py-12 px-4" aria-live="polite" aria-busy="true">
@@ -198,10 +179,10 @@ export default function IsletmeDetayClient({ params }: Props) {
       <main className="container mx-auto max-w-6xl py-8 px-4" itemScope itemType="https://schema.org/LocalBusiness">
         {/* Üst Bilgi Bölümü */}
         <div className="mb-8">
-          {/* <Button variant="outline" size="sm" onClick={handleBack} className="mb-4" aria-label="Geri dön">
+          <Button variant="outline" size="sm" onClick={handleBack} className="mb-4" aria-label="Geri dön">
             <ChevronLeft className="mr-2 h-4 w-4" aria-hidden="true" />
             Geri
-          </Button> */}
+          </Button>
 
           <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
             <div>
@@ -235,13 +216,6 @@ export default function IsletmeDetayClient({ params }: Props) {
                 </span>
               </div>
             </div>
-
-            {/* <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleShare} aria-label="İşletme bilgilerini paylaş">
-                <Share2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                Paylaş
-              </Button>
-            </div> */}
           </div>
         </div>
 
