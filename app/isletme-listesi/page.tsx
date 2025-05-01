@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MapPin, Building, Search, Filter, ChevronRight } from "lucide-react"
+import { MapPin, Building, Search, Filter } from "lucide-react"
 import Link from "next/link"
 
 export default function IsletmeListesi() {
@@ -69,7 +69,7 @@ export default function IsletmeListesi() {
 
         let query = supabase
           .from("isletmeler")
-          .select("id, isletme_adi, kategori, adres, fotograf_url, sehir, url_slug")
+          .select("id, isletme_adi, kategori, adres, fotograf_url, sehir, slug, url_slug")
           .order("isletme_adi")
 
         // Arama filtresi
@@ -193,7 +193,7 @@ export default function IsletmeListesi() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isletmeler.length > 0 ? (
             isletmeler.map((isletme) => (
-              <Link key={isletme.id} href={`/isletme/${isletme.id}`} className="block group">
+              <Link key={isletme.id} href={`/isletme/${isletme.url_slug}`} className="block group">
                 <Card className="overflow-hidden h-full transition-all duration-300 hover:shadow-lg">
                   <div className="h-48 overflow-hidden">
                     {isletme.fotograf_url ? (
@@ -221,12 +221,6 @@ export default function IsletmeListesi() {
                     <div className="flex items-start mt-2">
                       <MapPin className="h-4 w-4 mr-2 mt-1 text-gray-500" />
                       <p className="text-sm text-gray-600 line-clamp-2">{isletme.adres}</p>
-                    </div>
-                    <div className="mt-4 flex justify-end">
-                      <span className="text-red-600 text-sm font-medium flex items-center group-hover:underline">
-                        Detayları Görüntüle
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </span>
                     </div>
                   </CardContent>
                 </Card>

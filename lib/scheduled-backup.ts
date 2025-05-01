@@ -1,155 +1,130 @@
+import { createClient } from "@/lib/supabase/server"
+import { logger } from "@/lib/logger"
+
 /**
- * Otomatik yedekleme servisi
- * Bu servis, düzenli aralıklarla veritabanı yedeklemesi yapar
+ * Zamanlanmış yedekleme işlemini çalıştırır
+ * @returns {Promise<Object>} Yedekleme sonucu
  */
-
-import { startBackup, getBackups } from "./backup-service"
-import { createClient } from "./supabase"
-
-// Yedeklenecek tabloların listesi
-const TABLES_TO_BACKUP = ["isletmeler", "kullanicilar", "musteriler", "site_ayarlari", "notifications", "tasks"]
-
-// Son 10 yedeklemeyi sakla, diğerlerini temizle
-const MAX_BACKUPS_TO_KEEP = 10
-
-// Yedekleme işlemini daha güvenli hale getirelim
 export async function runScheduledBackup() {
   try {
-    console.log("Otomatik yedekleme başlatılıyor...")
+    logger.info("Zamanlanmış yedekleme başlatılıyor...")
+    const startTime = Date.now()
+    const supabase = createClient()
 
-    // Yedekleme işlemi başlamadan önce sistem log kaydı oluştur
-    await logBackupActivity("start", "Otomatik yedekleme başlatıldı")
-
-    // Yeni yedekleme başlat
-    const backup = await startBackup(TABLES_TO_BACKUP)
-
-    console.log(`Yedekleme başlatıldı: ${backup.id}`)
-
-    // Eski yedeklemeleri temizle
-    await cleanupOldBackups()
-
-    // Başarılı yedekleme log kaydı
-    await logBackupActivity("success", `Otomatik yedekleme tamamlandı: ${backup.id}`)
-
-    return {
-      success: true,
-      backupId: backup.id,
-      message: "Otomatik yedekleme başarıyla başlatıldı",
-    }
-  } catch (error) {
-    console.error("Otomatik yedekleme hatası:", error)
-
-    // Hata log kaydı
-    await logBackupActivity("error", `Otomatik yedekleme hatası: ${error.message}`)
-
-    return {
-      success: false,
-      error: error.message || "Bilinmeyen hata",
-      message: "Otomatik yedekleme başlatılırken hata oluştu",
-    }
-  }
-}
-
-// Yedekleme aktivitesini logla
-async function logBackupActivity(status, message) {
-  const supabase = createClient()
-
-  try {
-    await supabase.from("system_logs").insert([
-      {
-        action: "scheduled_backup",
-        status,
-        details: {
-          message,
-          timestamp: new Date().toISOString(),
-        },
-      },
-    ])
-  } catch (error) {
-    console.error("Yedekleme log kaydı oluşturulurken hata:", error)
-  }
-}
-
-/**
- * Eski yedeklemeleri temizler
- */
-async function cleanupOldBackups() {
-  try {
-    // Tüm yedeklemeleri al
-    const backups = await getBackups()
-
-    // Tamamlanmış yedeklemeleri tarihe göre sırala (en yeniden en eskiye)
-    const completedBackups = backups
-      .filter((b) => b.status === "completed")
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-    // Maksimum sayıdan fazla yedekleme varsa, en eskileri sil
-    if (completedBackups.length > MAX_BACKUPS_TO_KEEP) {
-      const backupsToDelete = completedBackups.slice(MAX_BACKUPS_TO_KEEP)
-
-      console.log(`${backupsToDelete.length} eski yedekleme temizleniyor...`)
-
-      // Silme işlemlerini gerçekleştir
-      // Not: Bu kısmı şimdilik yorum olarak bırakıyoruz, gerçek silme işlemi için aktifleştirilebilir
-      /*
-      for (const backup of backupsToDelete) {
-        if (backup.file_name) {
-          await deleteBackup(backup.id, backup.file_name);
-          console.log(`Yedekleme silindi: ${backup.id}`);
-        }
-      }
-      */
-    }
-  } catch (error) {
-    console.error("Eski yedeklemeleri temizlerken hata:", error)
-  }
-}
-
-/**
- * Otomatik yedekleme için zamanlama bilgilerini alır
- * @returns Zamanlama bilgileri
- */
-export async function getBackupSchedule() {
-  const supabase = createClient()
-
-  try {
-    // Zamanlama bilgisini getir
-    const { data, error } = await supabase.from("backup_schedules").select("*").eq("id", 1).single()
-
-    if (error) {
-      console.error("Yedekleme zamanlaması alınırken hata:", error)
-      return null
-    }
-
-    return data
-  } catch (error) {
-    console.error("Yedekleme zamanlaması alınırken hata:", error)
-    return null
-  }
-}
-
-/**
- * Otomatik yedekleme için zamanlama bilgilerini günceller
- * @param schedule Zamanlama bilgileri
- * @returns Güncelleme sonucu
- */
-export async function updateBackupSchedule(schedule) {
-  const supabase = createClient()
-
-  try {
-    const { error } = await supabase
+    // Yedekleme zamanlamasını güncelle
+    const now = new Date()
+    await supabase
       .from("backup_schedules")
-      .upsert({
-        ...schedule,
-        updated_at: new Date().toISOString(),
+      .update({
+        last_run: now.toISOString(),
+        updated_at: now.toISOString(),
       })
       .eq("id", 1)
 
-    if (error) throw error
+    // Yedeklenecek tabloları al
+    const { data: tables, error: tablesError } = await supabase.from("backup_tables").select("*").eq("enabled", true)
 
-    return { success: true }
+    if (tablesError) {
+      throw new Error(`Yedeklenecek tablolar alınamadı: ${tablesError.message}`)
+    }
+
+    if (!tables || tables.length === 0) {
+      return {
+        success: true,
+        message: "Yedeklenecek tablo bulunamadı",
+        timestamp: now.toISOString(),
+        duration: Date.now() - startTime,
+      }
+    }
+
+    // Her tablo için yedekleme yap
+    const backupResults = []
+    for (const table of tables) {
+      try {
+        // Tablo verilerini al
+        const { data, error } = await supabase.from(table.table_name).select("*")
+
+        if (error) {
+          throw new Error(`Tablo verileri alınamadı (${table.table_name}): ${error.message}`)
+        }
+
+        // Yedekleme kaydı oluştur
+        const { data: backupData, error: backupError } = await supabase.from("backups").insert({
+          table_name: table.table_name,
+          data: data,
+          created_at: now.toISOString(),
+          status: "completed",
+          record_count: data?.length || 0,
+        })
+
+        if (backupError) {
+          throw new Error(`Yedekleme kaydı oluşturulamadı (${table.table_name}): ${backupError.message}`)
+        }
+
+        backupResults.push({
+          table: table.table_name,
+          status: "success",
+          recordCount: data?.length || 0,
+        })
+
+        logger.info(`Tablo yedeklendi: ${table.table_name} (${data?.length || 0} kayıt)`)
+      } catch (error) {
+        logger.error(`Tablo yedekleme hatası (${table.table_name}):`, error)
+        backupResults.push({
+          table: table.table_name,
+          status: "error",
+          error: error.message,
+        })
+
+        // Hata kaydı oluştur
+        await supabase.from("backups").insert({
+          table_name: table.table_name,
+          created_at: now.toISOString(),
+          status: "error",
+          error_message: error.message,
+        })
+      }
+    }
+
+    // Yedekleme log kaydı oluştur
+    await supabase.from("backup_logs").insert({
+      created_at: now.toISOString(),
+      status: "completed",
+      details: {
+        results: backupResults,
+        duration: Date.now() - startTime,
+      },
+    })
+
+    logger.info(`Zamanlanmış yedekleme tamamlandı (${Date.now() - startTime}ms)`)
+
+    return {
+      success: true,
+      message: "Zamanlanmış yedekleme tamamlandı",
+      timestamp: now.toISOString(),
+      duration: Date.now() - startTime,
+      results: backupResults,
+    }
   } catch (error) {
-    console.error("Yedekleme zamanlaması güncellenirken hata:", error)
-    return { success: false, error: error.message }
+    logger.error("Zamanlanmış yedekleme hatası:", error)
+
+    // Hata log kaydı oluştur
+    try {
+      const supabase = createClient()
+      await supabase.from("backup_logs").insert({
+        created_at: new Date().toISOString(),
+        status: "error",
+        error_message: error.message,
+      })
+    } catch (logError) {
+      logger.error("Yedekleme hata logu oluşturulamadı:", logError)
+    }
+
+    return {
+      success: false,
+      message: "Zamanlanmış yedekleme sırasında hata oluştu",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    }
   }
 }

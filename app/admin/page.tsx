@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2, Shield, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { CardFooter } from "@/components/ui/card"
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -17,51 +18,79 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [checkingSession, setCheckingSession] = useState(true)
+  const [showLoginForm, setShowLoginForm] = useState(false)
 
   // Supabase istemcisini oluştur
   const supabase = createClient()
 
   // Sayfa yüklendiğinde oturum kontrolü yap
   useEffect(() => {
+    let isMounted = true // Komponent unmount olduktan sonra state güncellemelerini engelle
+
     async function checkSession() {
       try {
+        console.log("[AdminLoginPage] Oturum kontrolü başlatılıyor...")
+
         const {
           data: { session },
         } = await supabase.auth.getSession()
 
-        if (session) {
-          // Kullanıcı rolünü kontrol et
-          const { data: userData, error: userError } = await supabase
-            .from("kullanicilar")
-            .select("rol")
-            .eq("id", session.user.id)
-            .single()
+        if (!session) {
+          console.log("[AdminLoginPage] Oturum yok, giriş formunu göster")
+          if (isMounted) setShowLoginForm(true)
+          return
+        }
 
-          if (!userError && userData) {
-            // Rol bazlı yönlendirme
-            if (userData.rol === "admin") {
-              router.push("/admin/dashboard")
-            } else if (userData.rol === "sales") {
-              router.push("/admin/isletme-listesi")
-            } else {
-              // Yetkisiz kullanıcı
-              setError("Bu panele erişim yetkiniz bulunmamaktadır.")
-              await supabase.auth.signOut()
-            }
-          } else {
-            // Kullanıcı profili bulunamadı
+        console.log("[AdminLoginPage] Oturum var, kullanıcı rolünü kontrol et")
+
+        // Kullanıcı rolünü kontrol et
+        const { data: userData, error: userError } = await supabase
+          .from("kullanicilar")
+          .select("rol")
+          .eq("id", session.user.id)
+          .single()
+
+        if (userError) {
+          console.error("[AdminLoginPage] Kullanıcı bilgileri alınamadı:", userError)
+          if (isMounted) {
             setError("Kullanıcı profili bulunamadı.")
+            setShowLoginForm(true)
           }
+          return
+        }
+
+        console.log("[AdminLoginPage] Kullanıcı rolü:", userData?.rol)
+
+        // Rol bazlı yönlendirme
+        if (userData?.rol === "admin" && isMounted) {
+          console.log("[AdminLoginPage] Admin rolü, dashboard'a yönlendiriliyor")
+          router.push("/admin/dashboard")
+        } else if (userData?.rol === "sales" && isMounted) {
+          console.log("[AdminLoginPage] Sales rolü, işletme listesine yönlendiriliyor")
+          router.push("/admin/isletme-listesi")
+        } else if (isMounted) {
+          console.log("[AdminLoginPage] Yetkisiz rol, hata göster")
+          setError("Bu panele erişim yetkiniz bulunmamaktadır.")
+          setShowLoginForm(true)
         }
       } catch (error) {
-        console.error("Oturum kontrolü sırasında hata:", error)
+        console.error("[AdminLoginPage] Oturum kontrolü sırasında hata:", error)
+        if (isMounted) {
+          setError(error.message || "Oturum kontrolü sırasında bir hata oluştu.")
+          setShowLoginForm(true)
+        }
       } finally {
-        setCheckingSession(false)
+        if (isMounted) setCheckingSession(false)
       }
     }
 
     checkSession()
-  }, [router, supabase])
+
+    // Cleanup function
+    return () => {
+      isMounted = false
+    }
+  }, []) // router bağımlılığını kaldırarak yönlendirme döngüsünü engelle
 
   // Giriş işlemi
   const handleLogin = async (e) => {
@@ -76,13 +105,20 @@ export default function AdminLoginPage() {
       setLoading(true)
       setError("")
 
+      console.log("[AdminLoginPage] Giriş yapılıyor:", email)
+
       // Supabase ile giriş yap
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("[AdminLoginPage] Giriş hatası:", error)
+        throw error
+      }
+
+      console.log("[AdminLoginPage] Giriş başarılı, kullanıcı rolünü kontrol et")
 
       if (data?.user) {
         // Kullanıcı rolünü kontrol et
@@ -93,7 +129,11 @@ export default function AdminLoginPage() {
           .single()
 
         if (userError) {
+          console.error("[AdminLoginPage] Kullanıcı bilgileri alınamadı:", userError)
+
           // Kullanıcı profili bulunamadı, oluşturmayı dene
+          console.log("[AdminLoginPage] Kullanıcı profili oluşturuluyor")
+
           const { error: insertError } = await supabase.from("kullanicilar").insert([
             {
               id: data.user.id,
@@ -104,27 +144,36 @@ export default function AdminLoginPage() {
           ])
 
           if (insertError) {
+            console.error("[AdminLoginPage] Kullanıcı profili oluşturulamadı:", insertError)
             throw new Error("Kullanıcı profili oluşturulamadı.")
           }
 
           // Normal kullanıcılar admin paneline erişemez
+          console.log("[AdminLoginPage] Normal kullanıcı, oturumu kapat")
+
           await supabase.auth.signOut()
           throw new Error("Bu panele erişim yetkiniz bulunmamaktadır.")
         }
 
+        console.log("[AdminLoginPage] Kullanıcı rolü:", userData?.rol)
+
         // Rol bazlı yönlendirme
         if (userData?.rol === "admin") {
+          console.log("[AdminLoginPage] Admin rolü, dashboard'a yönlendiriliyor")
           router.push("/admin/dashboard")
         } else if (userData?.rol === "sales") {
+          console.log("[AdminLoginPage] Sales rolü, işletme listesine yönlendiriliyor")
           router.push("/admin/isletme-listesi")
         } else {
+          console.log("[AdminLoginPage] Yetkisiz rol, oturumu kapat")
+
           // Yetkisiz kullanıcı
           await supabase.auth.signOut()
           throw new Error("Bu panele erişim yetkiniz bulunmamaktadır.")
         }
       }
     } catch (error) {
-      console.error("Giriş sırasında hata:", error)
+      console.error("[AdminLoginPage] Giriş sırasında hata:", error)
       setError(error.message || "Giriş yapılırken bir hata oluştu.")
     } finally {
       setLoading(false)
@@ -168,41 +217,43 @@ export default function AdminLoginPage() {
               </Alert>
             )}
 
-            <form onSubmit={handleLogin}>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-posta</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="ornek@mail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+            {showLoginForm ? (
+              <form onSubmit={handleLogin}>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">E-posta</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="ornek@mail.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Şifre</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Giriş Yapılıyor...
+                      </>
+                    ) : (
+                      "Giriş Yap"
+                    )}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Şifre</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Giriş Yapılıyor...
-                    </>
-                  ) : (
-                    "Giriş Yap"
-                  )}
-                </Button>
-              </div>
-            </form>
+              </form>
+            ) : null}
           </CardContent>
           <CardFooter className="flex flex-col">
             <p className="text-xs text-center text-gray-500 mt-4">

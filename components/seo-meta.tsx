@@ -41,7 +41,7 @@ export default function SeoMeta({
     ogUrl ||
     (typeof window !== "undefined"
       ? window.location.href
-      : `${process.env.NEXT_PUBLIC_SITE_URL || ""}/isletme/${isletmeData?.id || ""}`)
+      : `${process.env.NEXT_PUBLIC_SITE_URL || ""}/isletme/${isletmeData?.sehir}/${isletmeData?.slug || ""}`)
 
   // SEO başlığı ve açıklamasını işletme verilerinden daha akıllı bir şekilde oluşturalım
   const finalTitle = isletmeData?.seo_baslik
@@ -78,10 +78,12 @@ export default function SeoMeta({
         locality: isletmeData.ilce || "",
         region: isletmeData.sehir || "",
         country: "Türkiye",
+        streetAddress: isletmeData.adres || "",
       },
       priceRange: isletmeData.fiyat_araligi || "₺₺",
       openingHours: isletmeData.calisma_saatleri || "",
       socialLinks: isletmeData.sosyal_medya ? Object.values(isletmeData.sosyal_medya).filter(Boolean) : [],
+      category: isletmeData.kategori,
     })
   }
 

@@ -137,6 +137,45 @@ export default function AyarlarPage() {
     try {
       setSaving(true)
 
+      // Zorunlu alanları kontrol et
+      if (!siteSettings.site_adi || !siteSettings.site_aciklama) {
+        toast({
+          title: "Hata",
+          description: "Site adı ve açıklaması zorunludur.",
+          variant: "destructive",
+        })
+        setSaving(false)
+        return
+      }
+
+      // E-posta formatını kontrol et (eğer girilmişse)
+      if (siteSettings.iletisim_email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(siteSettings.iletisim_email)) {
+          toast({
+            title: "Hata",
+            description: "Geçerli bir e-posta adresi giriniz.",
+            variant: "destructive",
+          })
+          setSaving(false)
+          return
+        }
+      }
+
+      // URL formatlarını kontrol et
+      const urlFields = ["logo_url", "seo_canonical"]
+      for (const field of urlFields) {
+        if (siteSettings[field] && !isValidUrl(siteSettings[field])) {
+          toast({
+            title: "Hata",
+            description: `${field} için geçerli bir URL giriniz.`,
+            variant: "destructive",
+          })
+          setSaving(false)
+          return
+        }
+      }
+
       // Site ayarlarını güncelle veya oluştur
       const { error } = await supabase.from("site_ayarlari").upsert([
         {
@@ -164,6 +203,16 @@ export default function AyarlarPage() {
       })
     } finally {
       setSaving(false)
+    }
+  }
+
+  // URL doğrulama yardımcı fonksiyonu
+  function isValidUrl(string) {
+    try {
+      new URL(string)
+      return true
+    } catch (_) {
+      return false
     }
   }
 

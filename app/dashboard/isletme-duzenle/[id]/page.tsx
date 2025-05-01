@@ -167,8 +167,7 @@ const IsletmeDuzenleSayfasi = () => {
               onChange={handleInputChange}
             />
           </div>
-          // İşletme düzenleme formuna koordinat alanları ekleyin // Adres alanından sonra, harita bilgileri bölümüne
-          aşağıdaki alanları ekleyin:
+          {/* Harita bilgileri bölümü */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="latitude">Enlem (Latitude)</Label>
@@ -201,7 +200,7 @@ const IsletmeDuzenleSayfasi = () => {
               onChange={handleInputChange}
             />
             <p className="text-sm text-gray-500">
-              Google Haritalar'da konumu bulun, "Paylaş" > "Haritayı yerleştir" seçeneğinden HTML kodunu kopyalayıp
+              Google Haritalar'da konumu bulun, "Paylaş" &gt; "Haritayı yerleştir" seçeneğinden HTML kodunu kopyalayıp
               buraya yapıştırın.
             </p>
           </div>

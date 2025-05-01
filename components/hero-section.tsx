@@ -2,24 +2,27 @@
 
 import { useState, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
-import { BasvuruModal } from "@/components/basvuru-modal"
+import { BasvuruForm } from "@/components/basvuru-form"
 
-// Bileşenin içinde, router kullanımını kaldır ve modal state'i ekle
 export function HeroSection() {
-  const [basvuruModalOpen, setBasvuruModalOpen] = useState(false)
+  const [basvuruYapildi, setBasvuruYapildi] = useState(false)
+  const [paketTipi, setPaketTipi] = useState("")
 
-  // Router işlemlerini optimize etmek için useCallback kullanımı
   const handlePackagesClick = useCallback(() => {
-    // Sayfadaki fiyatlandırma bölümüne yönlendir
     const pricingSection = document.getElementById("pricing-section")
     if (pricingSection) {
       pricingSection.scrollIntoView({ behavior: "smooth" })
     }
   }, [])
 
-  // Bileşenin sonuna modal ekle
+  const handleBasvuruSuccess = () => {
+    setBasvuruYapildi(true)
+    setTimeout(() => {
+      setBasvuruYapildi(false)
+    }, 3000)
+  }
+
   return (
     <section
       id="hero-section"
@@ -64,15 +67,6 @@ export function HeroSection() {
                 <p className="text-gray-700">7/24 WhatsApp desteği ile hızlı çözümler</p>
               </div>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" onClick={() => setBasvuruModalOpen(true)}>
-                Hemen Başvurun
-              </Button>
-              <Button size="lg" variant="outline" onClick={handlePackagesClick}>
-                Paketleri İncele
-              </Button>
-            </div>
           </div>
           <div className="flex-1 relative">
             <div className="absolute -top-4 -left-4 w-full h-full bg-gray-200 rounded-lg transform rotate-3"></div>
@@ -92,10 +86,11 @@ export function HeroSection() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Başvuru modalını ekle */}
-      <BasvuruModal open={basvuruModalOpen} onOpenChange={setBasvuruModalOpen} />
+        <div className="mt-16">
+          <BasvuruForm paketTipi={paketTipi} onSuccess={handleBasvuruSuccess} />
+        </div>
+      </div>
     </section>
   )
 }

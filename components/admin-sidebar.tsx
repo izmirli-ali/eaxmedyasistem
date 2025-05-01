@@ -13,16 +13,12 @@ import {
   Menu,
   X,
   ChevronDown,
-  Users,
   Shield,
   ListChecks,
   PlusCircle,
   FileText,
   CreditCard,
   Bell,
-  CheckSquare,
-  History,
-  ActivityIcon as ActivityLog,
 } from "lucide-react"
 
 // Bildirim merkezini import et
@@ -111,11 +107,6 @@ export function Sidebar() {
       ],
     },
     {
-      title: "Kullanıcı Yönetimi",
-      href: "/admin/kullanici-yonetimi",
-      icon: <Users className="h-5 w-5" />,
-    },
-    {
       title: "Ödeme Yönetimi",
       href: "/admin/musteri-yonetimi",
       icon: <CreditCard className="h-5 w-5" />,
@@ -126,30 +117,9 @@ export function Sidebar() {
       icon: <Bell className="h-5 w-5" />,
     },
     {
-      title: "Görevler",
-      href: "/admin/gorevler",
-      icon: <CheckSquare className="h-5 w-5" />,
-    },
-    {
-      title: "Raporlar",
-      href: "/admin/raporlar",
-      icon: <FileText className="h-5 w-5" />,
-    },
-    {
       title: "Ön Başvurular",
       href: "/admin/on-basvurular",
       icon: <FileText className="h-5 w-5" />,
-    },
-    {
-      title: "Değişiklik Günlüğü",
-      href: "/admin/degisiklik-gunlugu",
-      icon: <History className="h-5 w-5" />,
-      submenu: false,
-    },
-    {
-      title: "Sistem Logları",
-      href: "/admin/sistem-loglari",
-      icon: <ActivityLog className="h-5 w-5" />,
     },
     {
       title: "Ayarlar",
@@ -174,11 +144,6 @@ export function Sidebar() {
       title: "Bildirimler",
       href: "/admin/bildirimler",
       icon: <Bell className="h-5 w-5" />,
-    },
-    {
-      title: "Görevler",
-      href: "/admin/gorevler",
-      icon: <CheckSquare className="h-5 w-5" />,
     },
   ]
 

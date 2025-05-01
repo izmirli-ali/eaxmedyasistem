@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { ClientLayout } from "./ClientLayout"
+import { Suspense } from "react"
 
 // Google Analytics ve diğer izleme kodlarını ekleyelim
 import { Analytics } from "@/components/analytics"
@@ -61,10 +62,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClientLayout>
-      {children}
-      <Analytics />
-    </ClientLayout>
+    <Suspense>
+      <ClientLayout>
+        {children}
+        <Analytics />
+      </ClientLayout>
+    </Suspense>
   )
 }
 

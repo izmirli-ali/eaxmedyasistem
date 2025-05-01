@@ -1,8 +1,27 @@
-// Supabase ile ilgili yardımcı fonksiyonlar
-import { createClient } from "@/lib/supabase/client"
-import type { IsletmeType, MusteriType } from "./supabase-schema"
+/**
+ * Supabase ile ilgili yardımcı fonksiyonlar
+ * Bu modül, Supabase veritabanı işlemleri için yardımcı fonksiyonlar içerir.
+ * @module lib/supabase-utils
+ */
 
-// Kullanıcı rolünü kontrol et - RLS politikalarını tetiklemeyen güvenli bir yöntem
+import { createClient } from "@/lib/supabase/client"
+import { tryCatch, AppError } from "@/lib/error-handler"
+import { logger } from "@/lib/logger"
+import type { Database } from "@/types/supabase"
+import { createClient as createSupabase } from "@supabase/supabase-js"
+
+// Supabase client oluşturma
+export const createSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+
+  return createSupabase<Database>(supabaseUrl, supabaseKey)
+}
+
+/**
+ * Kullanıcı rolünü kontrol eder
+ * @returns {Promise<string|null>} Kullanıcı rolü veya null
+ */
 export async function checkUserRole(): Promise<string | null> {
   const supabase = createClient()
 
@@ -11,95 +30,97 @@ export async function checkUserRole(): Promise<string | null> {
 
     if (!session.session) return null
 
-    // Doğrudan auth.users tablosundan kontrol et
-    const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(session.session.user.id)
+    // İstemci tarafında admin API'sini kullanmak yerine RPC kullan
+    const { data: roleData, error: rpcError } = await supabase.rpc("get_user_role", {
+      user_id: session.session.user.id,
+    })
 
-    if (authError || !authUser) {
-      console.error("Auth kullanıcı bilgisi alınamadı:", authError)
-
-      // Alternatif olarak, RPC kullan
-      const { data: roleData, error: rpcError } = await supabase.rpc("get_user_role", {
-        user_id: session.session.user.id,
-      })
-
-      if (rpcError) {
-        console.error("RPC hatası:", rpcError)
-        return null
-      }
-
-      return roleData
-    }
-
-    // Super admin kontrolü
-    if (authUser.user?.app_metadata?.is_super_admin) {
-      return "admin"
+    if (rpcError) {
+      logger.error("Kullanıcı rolü alınırken hata", rpcError, "checkUserRole")
+      return null
     }
 
     // Email domain kontrolü ile satış temsilcisi tespiti
-    if (authUser.user?.email?.endsWith("@sales.example.com")) {
+    if (session.session.user.email?.endsWith("@sales.example.com")) {
       return "sales"
     }
 
-    return "user" // Varsayılan rol
+    return roleData || "user" // Varsayılan rol
   } catch (error) {
-    console.error("Kullanıcı rolü kontrol edilirken hata:", error)
+    logger.error("Kullanıcı rolü kontrol edilirken hata", error, "checkUserRole")
     return null
   }
 }
 
-// Admin mi kontrol et
+/**
+ * Kullanıcının admin olup olmadığını kontrol eder
+ * @returns {Promise<boolean>} Admin ise true, değilse false
+ */
 export async function isAdmin(): Promise<boolean> {
   const rol = await checkUserRole()
   return rol === "admin"
 }
 
-// Satış temsilcisi mi kontrol et
+/**
+ * Kullanıcının satış temsilcisi olup olmadığını kontrol eder
+ * @returns {Promise<boolean>} Satış temsilcisi ise true, değilse false
+ */
 export async function isSales(): Promise<boolean> {
   const rol = await checkUserRole()
   return rol === "sales"
 }
 
-// İşletme listesini getir - RLS politikalarını kullanarak
-export async function getIsletmeler(limit = 100): Promise<IsletmeType[]> {
-  const supabase = createClient()
+/**
+ * İşletme listesini getirir
+ * @param {number} limit - Maksimum işletme sayısı
+ * @returns {Promise<IsletmeType[]>} İşletme listesi
+ */
+export async function getIsletmeler(limit = 100) {
+  return tryCatch(async () => {
+    const supabase = createClient()
 
-  try {
     const { data, error } = await supabase
       .from("isletmeler")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(limit)
 
-    if (error) throw error
+    if (error) {
+      throw new AppError("İşletmeler yüklenirken hata oluştu", "FETCH_ISLETMELER_ERROR", error)
+    }
 
     return data || []
-  } catch (error) {
-    console.error("İşletmeler yüklenirken hata:", error)
-    return []
-  }
+  }, "getIsletmeler")
 }
 
-// Müşteri listesini getir
-export async function getMusteriler(limit = 100): Promise<MusteriType[]> {
-  const supabase = createClient()
+/**
+ * Müşteri listesini getirir
+ * @param {number} limit - Maksimum müşteri sayısı
+ * @returns {Promise<MusteriType[]>} Müşteri listesi
+ */
+export async function getMusteriler(limit = 100) {
+  return tryCatch(async () => {
+    const supabase = createClient()
 
-  try {
     const { data, error } = await supabase
       .from("musteriler")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(limit)
 
-    if (error) throw error
+    if (error) {
+      throw new AppError("Müşteriler yüklenirken hata oluştu", "FETCH_MUSTERILER_ERROR", error)
+    }
 
     return data || []
-  } catch (error) {
-    console.error("Müşteriler yüklenirken hata:", error)
-    return []
-  }
+  }, "getMusteriler")
 }
 
-// Sunulan hizmetler string olarak geliyor, diziye dönüştürmek için
+/**
+ * Sunulan hizmetleri string'den diziye dönüştürür
+ * @param {string} hizmetlerString - Virgülle ayrılmış hizmetler
+ * @returns {string[]} Hizmet dizisi
+ */
 export function parseHizmetler(hizmetlerString?: string): string[] {
   if (!hizmetlerString) return []
 
@@ -109,18 +130,22 @@ export function parseHizmetler(hizmetlerString?: string): string[] {
     .filter(Boolean)
 }
 
-// İşletmeyi URL slug ile getir
-export async function getIsletmeBySlug(sehir: string, slug: string): Promise<IsletmeType | null> {
-  const supabase = createClient()
+/**
+ * İşletmeyi URL slug ile getirir
+ * @param {string} sehir - İşletmenin bulunduğu şehir
+ * @param {string} slug - İşletmenin URL slug'ı
+ * @returns {Promise<{data: IsletmeType|null, error: any}>} İşletme verisi ve hata
+ */
+export async function getIsletmeBySlug(sehir: string, slug: string) {
+  return tryCatch(async () => {
+    const supabase = createClient()
 
-  try {
     const { data, error } = await supabase.from("isletmeler").select("*").eq("url_slug", `${sehir}/${slug}`).single()
 
-    if (error) throw error
+    if (error) {
+      throw new AppError(`İşletme bulunamadı: ${sehir}/${slug}`, "FETCH_ISLETME_ERROR", error)
+    }
 
     return data
-  } catch (error) {
-    console.error(`İşletme (${sehir}/${slug}) yüklenirken hata:`, error)
-    return null
-  }
+  }, "getIsletmeBySlug")
 }

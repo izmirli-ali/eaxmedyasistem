@@ -2,7 +2,7 @@
  * Telefon numarası doğrulama yardımcı fonksiyonu
  */
 
-export function validatePhone(phone: string): { valid: boolean; formatted?: string; message?: string } {
+export function validatePhoneNumber(phone: string): { valid: boolean; formatted?: string; message?: string } {
   // Boş değer kontrolü
   if (!phone) return { valid: false, message: "Telefon numarası gereklidir" }
 
@@ -21,13 +21,6 @@ export function validatePhone(phone: string): { valid: boolean; formatted?: stri
     return {
       valid: true,
       formatted: digits.replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, "$1$2 $3 $4"),
-    }
-  } else if (digits.length >= 10) {
-    // En az 10 rakam varsa, son 10 rakamı al ve formatla
-    const lastTenDigits = digits.slice(-10)
-    return {
-      valid: true,
-      formatted: "0" + lastTenDigits.replace(/(\d{3})(\d{3})(\d{4})/, "$1 $2 $3"),
     }
   }
 

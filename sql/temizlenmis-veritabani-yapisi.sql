@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS public.musteriler (
 CREATE OR REPLACE FUNCTION update_modified_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
+   NEW.updated_at = now();
+   RETURN NEW;
 END;
 $$ language 'plpgsql';
 

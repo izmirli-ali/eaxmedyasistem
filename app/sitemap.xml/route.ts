@@ -31,7 +31,7 @@ export async function GET(): Promise<Response> {
   isletmeler.forEach((isletme) => {
     sitemap += `
       <url>
-        <loc>${baseUrl}/isletme/${isletme.id}</loc>
+        <loc>${baseUrl}/isletme/${isletme.url_slug}</loc>
         <lastmod>${new Date(isletme.updated_at).toISOString()}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
