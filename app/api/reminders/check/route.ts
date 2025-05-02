@@ -1,73 +1,32 @@
-import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
+import { ContentReminderService } from "@/lib/content-reminder-service"
 
+// Vadesi geçmiş ve yaklaşan hatırlatmaları kontrol et
 export async function GET(request: Request) {
   try {
     const supabase = createClient()
 
-    // Bugünün tarihini al
-    const today = new Date()
-    const formattedDate = today.toISOString().split("T")[0]
+    // API anahtarını kontrol et
+    const url = new URL(request.url)
+    const apiKey = url.searchParams.get("apiKey")
 
-    // Bugün için hatırlatmaları getir
-    const { data: reminders, error } = await supabase
-      .from("content_reminders")
-      .select("*")
-      .eq("reminder_date", formattedDate)
-      .eq("is_sent", false)
-
-    if (error) {
-      console.error("Hatırlatmalar alınırken hata:", error)
-      return NextResponse.json({ error: "Hatırlatmalar alınırken hata oluştu" }, { status: 500 })
+    if (apiKey !== process.env.BACKUP_API_SECRET) {
+      return NextResponse.json({ error: "Geçersiz API anahtarı" }, { status: 401 })
     }
 
-    // Hatırlatma yoksa erken dön
-    if (!reminders || reminders.length === 0) {
-      return NextResponse.json({ message: "Bugün için hatırlatma bulunmamaktadır" })
-    }
+    // Hatırlatma servisini başlat
+    const reminderService = ContentReminderService.getInstance()
 
-    // Her hatırlatma için bildirim oluştur
-    const notifications = []
-    for (const reminder of reminders) {
-      // Bildirim oluştur
-      const { data: notification, error: notificationError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: reminder.user_id,
-          title: "İçerik Hatırlatması",
-          message: `${reminder.business_name} işletmesi için ${reminder.reminder_type} güncellemesi zamanı geldi.`,
-          type: "reminder",
-          related_id: reminder.id,
-          is_read: false,
-        })
-        .select()
-        .single()
+    // Vadesi geçmiş hatırlatmaları güncelle
+    await reminderService.updateOverdueReminders()
 
-      if (notificationError) {
-        console.error("Bildirim oluşturulurken hata:", notificationError)
-        continue
-      }
+    // Yaklaşan hatırlatmaları kontrol et ve bildirim gönder
+    await reminderService.checkUpcomingReminders()
 
-      // Hatırlatmayı gönderildi olarak işaretle
-      const { error: updateError } = await supabase
-        .from("content_reminders")
-        .update({ is_sent: true })
-        .eq("id", reminder.id)
-
-      if (updateError) {
-        console.error("Hatırlatma güncellenirken hata:", updateError)
-        continue
-      }
-
-      notifications.push(notification)
-    }
-
-    return NextResponse.json({
-      message: `${notifications.length} hatırlatma işlendi`,
-      notifications,
-    })
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Hatırlatma kontrolü sırasında hata:", error)
-    return NextResponse.json({ error: "Hatırlatma kontrolü sırasında hata oluştu" }, { status: 500 })
+    console.error("Hatırlatmalar kontrol edilirken hata:", error)
+    return NextResponse.json({ error: "Hatırlatmalar kontrol edilirken bir hata oluştu" }, { status: 500 })
   }
 }
