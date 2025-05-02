@@ -2,160 +2,116 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { logger } from "@/lib/logger"
+
+// Google Maps API'sinin yüklenip yüklenmediğini takip etmek için global değişken
+let isGoogleMapsLoaded = false
 
 interface AddressAutocompleteProps {
   value: string
-  onChange: (value: string, placeData?: any) => void
-  label?: string
+  onChange: (address: string, placeData?: google.maps.places.PlaceResult) => void
   placeholder?: string
-  className?: string
-  required?: boolean
   error?: string
 }
 
-// Declare google as a global variable to avoid Typescript errors
-declare global {
-  interface Window {
-    google?: any
-    initGoogleMapsCallback?: () => void
-  }
-}
-
-export function AddressAutocomplete({
-  value,
-  onChange,
-  label = "Adres",
-  placeholder = "Adres ara...",
-  className,
-  required = false,
-  error,
-}: AddressAutocompleteProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false)
+export function AddressAutocomplete({ value, onChange, placeholder, error }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteRef = useRef<any>(null)
-  const [scriptError, setScriptError] = useState<string | null>(null)
-  const [apiKey, setApiKey] = useState<string | null>(null)
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
-  // API anahtarını al
+  // Google Maps API'sini yükle
   useEffect(() => {
-    async function fetchApiKey() {
-      try {
-        setIsLoading(true)
-        const response = await fetch("/api/maps-key")
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          logger.error("API key fetch failed", {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData,
-          })
-          throw new Error(`API key could not be fetched: ${response.status} ${response.statusText}`)
-        }
-
-        const data = await response.json()
-
-        if (!data.apiKey) {
-          logger.error("API key is missing in response", { data })
-          throw new Error("API key is missing in response")
-        }
-
-        setApiKey(data.apiKey)
-        logger.info("API key fetched successfully")
-
-        // API anahtarı alındıktan sonra script'i yükle
-        const script = document.createElement("script")
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=places&language=tr`
-        script.async = true
-        script.defer = true
-
-        script.onload = () => {
-          logger.info("Google Maps script loaded successfully")
-          setIsScriptLoaded(true)
-          setIsLoading(false)
-        }
-
-        script.onerror = (e) => {
-          logger.error("Google Maps script failed to load", { error: e })
-          setScriptError("Google Maps API yüklenemedi")
-          setIsLoading(false)
-        }
-
-        document.head.appendChild(script)
-      } catch (err) {
-        logger.error("Failed to fetch Google Maps API key", { error: err })
-        setScriptError(`Google Maps API anahtarı yüklenemedi: ${err.message}`)
-        setIsLoading(false)
-      }
+    // Eğer API zaten yüklenmişse tekrar yükleme
+    if (window.google?.maps?.places || isGoogleMapsLoaded) {
+      initAutocomplete()
+      return
     }
 
-    fetchApiKey()
+    setIsLoading(true)
+    isGoogleMapsLoaded = true
 
-    // Cleanup function
+    // API key'i çevre değişkeninden al
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
+    // Script elementini oluştur
+    const script = document.createElement("script")
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMapsAutocomplete`
+    script.async = true
+    script.defer = true
+
+    // Global callback fonksiyonu
+    window.initGoogleMapsAutocomplete = () => {
+      setIsLoading(false)
+      initAutocomplete()
+    }
+
+    // Hata durumunda
+    script.onerror = () => {
+      console.error("Google Maps API yüklenemedi")
+      setIsLoading(false)
+    }
+
+    document.head.appendChild(script)
+
     return () => {
-      const scripts = document.querySelectorAll('script[src*="maps.googleapis.com"]')
-      scripts.forEach((script) => script.remove())
+      // Temizlik işlemi
+      window.initGoogleMapsAutocomplete = () => {}
+      if (document.head.contains(script)) {
+        document.head.removeChild(script)
+      }
     }
   }, [])
 
   // Autocomplete'i başlat
-  useEffect(() => {
-    if (typeof window === "undefined" || !inputRef.current || !isScriptLoaded || !window.google) {
-      return
-    }
+  const initAutocomplete = () => {
+    if (!inputRef.current || !window.google?.maps?.places) return
 
-    try {
-      logger.info("Initializing Google Maps Autocomplete")
+    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+      types: ["address"],
+      componentRestrictions: { country: "tr" },
+      fields: ["address_components", "formatted_address", "geometry", "name"],
+    })
 
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-        componentRestrictions: { country: "tr" },
-        fields: ["address_components", "formatted_address", "geometry", "name"],
-      })
-
-      autocompleteRef.current.addListener("place_changed", () => {
-        const place = autocompleteRef.current?.getPlace()
-        if (place && place.formatted_address) {
-          onChange(place.formatted_address, place)
-        }
-      })
-
-      logger.info("Google Maps Autocomplete initialized successfully")
-    } catch (error) {
-      logger.error("Google Maps Autocomplete initialization failed", { error })
-      setScriptError(`Autocomplete başlatılamadı: ${error.message}`)
-    }
-  }, [isScriptLoaded, onChange])
+    autocompleteRef.current.addListener("place_changed", () => {
+      const place = autocompleteRef.current?.getPlace()
+      if (place && place.formatted_address) {
+        onChange(place.formatted_address, place)
+      }
+    })
+  }
 
   return (
-    <div className={cn("space-y-2", className)}>
-      {label && (
-        <Label htmlFor="address" className={error ? "text-destructive" : ""}>
-          {label} {required && <span className="text-destructive">*</span>}
-        </Label>
+    <div className="relative">
+      <Input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder || "Adres girin"}
+        className={error ? "border-destructive" : ""}
+        disabled={isLoading}
+      />
+      {isLoading && (
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+          <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+        </div>
       )}
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          id="address"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={isLoading ? "Yükleniyor..." : placeholder}
-          disabled={isLoading}
-          className={error ? "border-destructive" : ""}
-        />
-        {isLoading && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
-        )}
-      </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
-      {scriptError && <p className="text-xs text-destructive mt-1">{scriptError}</p>}
     </div>
   )
+}
+
+// Global tiplemeler
+declare global {
+  interface Window {
+    initGoogleMapsAutocomplete: () => void
+    google?: {
+      maps?: {
+        places: {
+          Autocomplete: new (
+            input: HTMLInputElement,
+            options?: google.maps.places.AutocompleteOptions,
+          ) => google.maps.places.Autocomplete
+        }
+      }
+    }
+  }
 }

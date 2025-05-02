@@ -1,17 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 import {
-  Building,
   MapPin,
   Phone,
   Globe,
   Mail,
   Clock,
-  Calendar,
   Tag,
   Star,
   Facebook,
@@ -22,215 +21,269 @@ import {
   Wifi,
   Car,
   CreditCard,
-  Package,
   Accessibility,
+  Calendar,
+  Package,
 } from "lucide-react"
 
 interface FormOnizlemeProps {
   formData: any
 }
 
+// Named export ekleyelim
 export function FormOnizleme({ formData }: FormOnizlemeProps) {
-  const [activeTab, setActiveTab] = useState("genel")
-  const [isSticky, setIsSticky] = useState(false)
+  // Sosyal medya ikonları
+  const sosyalMedyaIkonlari: Record<string, any> = {
+    facebook: { icon: Facebook, color: "text-blue-600" },
+    instagram: { icon: Instagram, color: "text-pink-600" },
+    twitter: { icon: Twitter, color: "text-blue-400" },
+    linkedin: { icon: Linkedin, color: "text-blue-700" },
+    youtube: { icon: Youtube, color: "text-red-600" },
+  }
 
-  // Scroll olayını dinle
-  useEffect(() => {
-    const handleScroll = () => {
-      const offset = window.scrollY
-      setIsSticky(offset > 300)
-    }
-
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
-  // Özellikleri filtrele
-  const aktifOzellikler = Object.entries(formData)
-    .filter(([key, value]) => typeof value === "boolean" && value === true && !["one_cikan"].includes(key))
-    .map(([key]) => key)
-
-  // Özellik ikonlarını belirle
+  // Özellik ikonları
   const ozellikIkonlari: Record<string, any> = {
-    wifi: { icon: Wifi, label: "Ücretsiz Wi-Fi" },
+    wifi: { icon: Wifi, label: "Wi-Fi" },
     otopark: { icon: Car, label: "Otopark" },
     kredi_karti: { icon: CreditCard, label: "Kredi Kartı" },
+    engelli_erisim: { icon: Accessibility, label: "Engelli Erişimi" },
     rezervasyon: { icon: Calendar, label: "Rezervasyon" },
     paket_servis: { icon: Package, label: "Paket Servis" },
-    engelli_erisim: { icon: Accessibility, label: "Engelli Erişimi" },
+    one_cikan: { icon: Star, label: "Öne Çıkan" },
   }
 
   return (
-    <Card className={`border shadow-md ${isSticky ? "sticky top-4 transition-all duration-300" : ""}`}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">İşletme Önizleme</CardTitle>
-      </CardHeader>
-      <CardContent className="p-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="genel">Genel</TabsTrigger>
-            <TabsTrigger value="iletisim">İletişim</TabsTrigger>
-            <TabsTrigger value="ozellikler">Özellikler</TabsTrigger>
-          </TabsList>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">İşletme Önizleme</h3>
+        <Badge variant="outline" className="text-xs">
+          Önizleme
+        </Badge>
+      </div>
 
-          <TabsContent value="genel" className="space-y-4">
-            {formData.fotograf_url && (
-              <div className="aspect-video rounded-md overflow-hidden bg-muted">
-                <img
-                  src={formData.fotograf_url || "/placeholder.svg"}
-                  alt={formData.isletme_adi || "İşletme görseli"}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+      <ScrollArea className="h-[600px] rounded-md border p-4">
+        <div className="space-y-8">
+          {/* Ana Görsel */}
+          <div className="relative w-full h-48 rounded-lg overflow-hidden bg-muted">
+            {formData.fotograf_url ? (
+              <img
+                src={formData.fotograf_url || "/placeholder.svg"}
+                alt={formData.isletme_adi || "İşletme görseli"}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">Görsel eklenmedi</div>
             )}
+          </div>
 
-            <div className="space-y-3">
-              {formData.isletme_adi && (
-                <div className="flex items-start gap-2">
-                  <Building className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <h3 className="font-medium">{formData.isletme_adi}</h3>
-                    {formData.one_cikan && (
-                      <Badge variant="secondary" className="mt-1">
-                        <Star className="h-3 w-3 mr-1 text-yellow-500" /> Öne Çıkan
-                      </Badge>
+          {/* İşletme Adı ve Kategori */}
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold">{formData.isletme_adi || "İşletme Adı"}</h1>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{formData.kategori || "Kategori"}</Badge>
+              {formData.alt_kategori && <Badge variant="outline">{formData.alt_kategori}</Badge>}
+              {formData.fiyat_araligi && (
+                <Badge variant="outline" className="font-mono">
+                  {formData.fiyat_araligi}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Açıklama */}
+          <div className="space-y-2">
+            <h2 className="text-lg font-medium">Hakkında</h2>
+            <p className="text-muted-foreground">{formData.aciklama || "İşletme açıklaması henüz girilmedi."}</p>
+          </div>
+
+          <Separator />
+
+          {/* İletişim Bilgileri */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-medium">İletişim Bilgileri</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Adres */}
+              <div className="flex items-start gap-2">
+                <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Adres</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formData.adres || "Adres girilmedi"}
+                    {formData.sehir && (
+                      <>
+                        <br />
+                        {formData.ilce && `${formData.ilce}, `}
+                        {formData.sehir}
+                      </>
                     )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Telefon */}
+              <div className="flex items-start gap-2">
+                <Phone className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">Telefon</p>
+                  <p className="text-sm text-muted-foreground">{formData.telefon || "Telefon girilmedi"}</p>
+                </div>
+              </div>
+
+              {/* E-posta */}
+              {formData.email && (
+                <div className="flex items-start gap-2">
+                  <Mail className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">E-posta</p>
+                    <p className="text-sm text-muted-foreground">{formData.email}</p>
                   </div>
                 </div>
               )}
 
-              {formData.kategori && (
-                <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    {formData.kategori}
-                    {formData.alt_kategori && ` / ${formData.alt_kategori}`}
-                  </span>
-                </div>
-              )}
-
-              {formData.adres && (
+              {/* Website */}
+              {formData.website && (
                 <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <span className="text-sm">
-                    {formData.adres}
-                    {formData.sehir && `, ${formData.sehir}`}
-                    {formData.ilce && ` / ${formData.ilce}`}
-                  </span>
-                </div>
-              )}
-
-              {formData.calisma_saatleri && (
-                <div className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div className="text-sm whitespace-pre-line">{formData.calisma_saatleri}</div>
-                </div>
-              )}
-
-              {formData.aciklama && (
-                <div className="pt-2 text-sm">
-                  {formData.aciklama.length > 150 ? `${formData.aciklama.substring(0, 150)}...` : formData.aciklama}
+                  <Globe className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Web Sitesi</p>
+                    <p className="text-sm text-muted-foreground">{formData.website}</p>
+                  </div>
                 </div>
               )}
             </div>
-          </TabsContent>
 
-          <TabsContent value="iletisim" className="space-y-3">
-            {formData.telefon && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{formData.telefon}</span>
-              </div>
-            )}
-
-            {formData.email && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{formData.email}</span>
-              </div>
-            )}
-
-            {formData.website && (
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{formData.website}</span>
-              </div>
-            )}
-
-            {formData.sosyal_medya && (
-              <div className="pt-2">
-                <h4 className="text-sm font-medium mb-2">Sosyal Medya</h4>
-                <div className="flex flex-wrap gap-2">
-                  {formData.sosyal_medya.facebook && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Facebook className="h-3 w-3" />
-                      <span className="text-xs">Facebook</span>
-                    </Badge>
-                  )}
-                  {formData.sosyal_medya.instagram && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Instagram className="h-3 w-3" />
-                      <span className="text-xs">Instagram</span>
-                    </Badge>
-                  )}
-                  {formData.sosyal_medya.twitter && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Twitter className="h-3 w-3" />
-                      <span className="text-xs">Twitter</span>
-                    </Badge>
-                  )}
-                  {formData.sosyal_medya.linkedin && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Linkedin className="h-3 w-3" />
-                      <span className="text-xs">LinkedIn</span>
-                    </Badge>
-                  )}
-                  {formData.sosyal_medya.youtube && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Youtube className="h-3 w-3" />
-                      <span className="text-xs">YouTube</span>
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="ozellikler">
-            {aktifOzellikler.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2">
-                {aktifOzellikler.map((ozellik) => {
-                  const ozellikBilgi = ozellikIkonlari[ozellik]
-                  if (!ozellikBilgi) return null
-
-                  const OzellikIkon = ozellikBilgi.icon
-                  return (
-                    <div key={ozellik} className="flex items-center gap-2">
-                      <OzellikIkon className="h-4 w-4 text-primary" />
-                      <span className="text-sm">{ozellikBilgi.label}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Henüz özellik seçilmedi.</p>
-            )}
-
-            {formData.sunulan_hizmetler && (
+            {/* Sosyal Medya */}
+            {formData.sosyal_medya && Object.entries(formData.sosyal_medya).some(([_, value]) => value) && (
               <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">Sunulan Hizmetler</h4>
-                <div className="flex flex-wrap gap-1">
-                  {formData.sunulan_hizmetler.split(",").map((hizmet: string, index: number) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {hizmet.trim()}
-                    </Badge>
-                  ))}
+                <p className="font-medium mb-2">Sosyal Medya</p>
+                <div className="flex flex-wrap gap-3">
+                  {Object.entries(formData.sosyal_medya).map(
+                    ([platform, url]) =>
+                      url && (
+                        <div
+                          key={platform}
+                          className={`flex items-center gap-1 text-sm ${
+                            sosyalMedyaIkonlari[platform]?.color || "text-muted-foreground"
+                          }`}
+                        >
+                          {sosyalMedyaIkonlari[platform]?.icon &&
+                            // Düzeltilmiş dinamik bileşen kullanımı
+                            React.createElement(sosyalMedyaIkonlari[platform].icon, { className: "h-4 w-4" })}
+                          <span>{platform.charAt(0).toUpperCase() + platform.slice(1)}</span>
+                        </div>
+                      ),
+                  )}
                 </div>
               </div>
             )}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+          </div>
+
+          <Separator />
+
+          {/* Çalışma Saatleri */}
+          {formData.calisma_saatleri && (
+            <>
+              <div className="space-y-4">
+                <h2 className="text-lg font-medium flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Çalışma Saatleri
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {formData.calisma_gunleri &&
+                    Object.entries(formData.calisma_gunleri).map(([gun, saatler]: [string, any]) => (
+                      <div key={gun} className="flex justify-between text-sm">
+                        <span className="font-medium">{gun.charAt(0).toUpperCase() + gun.slice(1)}</span>
+                        <span>
+                          {saatler.acik ? (
+                            `${saatler.acilis} - ${saatler.kapanis}`
+                          ) : (
+                            <span className="text-muted-foreground">Kapalı</span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Özellikler */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-medium">Özellikler</h2>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(formData)
+                .filter(([key, value]) => typeof value === "boolean" && value === true && ozellikIkonlari[key])
+                .map(([key]) => (
+                  <Badge key={key} variant="secondary" className="flex items-center gap-1">
+                    {ozellikIkonlari[key].icon &&
+                      // Düzeltilmiş dinamik bileşen kullanımı
+                      React.createElement(ozellikIkonlari[key].icon, { className: "h-3 w-3" })}
+                    <span>{ozellikIkonlari[key].label}</span>
+                  </Badge>
+                ))}
+              {!Object.entries(formData).some(
+                ([key, value]) => typeof value === "boolean" && value === true && ozellikIkonlari[key],
+              ) && <p className="text-sm text-muted-foreground">Özellik seçilmedi</p>}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* SEO Bilgileri */}
+          {(formData.seo_baslik || formData.seo_aciklama || formData.seo_anahtar_kelimeler) && (
+            <>
+              <div className="space-y-4">
+                <h2 className="text-lg font-medium">SEO Bilgileri</h2>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      {formData.seo_baslik || formData.isletme_adi || "İşletme Adı"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 pt-0">
+                    <p className="text-sm text-muted-foreground">
+                      {formData.seo_aciklama || formData.aciklama?.substring(0, 160) || "İşletme açıklaması"}
+                    </p>
+                    {formData.seo_anahtar_kelimeler && (
+                      <div className="flex flex-wrap gap-1">
+                        {formData.seo_anahtar_kelimeler.split(",").map((keyword: string, index: number) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            <Tag className="h-3 w-3 mr-1" />
+                            {keyword.trim()}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Fotoğraflar */}
+          {formData.fotograflar && formData.fotograflar.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-medium">Fotoğraflar</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {formData.fotograflar.map((url: string, index: number) => (
+                  <div key={index} className="aspect-square rounded-md overflow-hidden bg-muted">
+                    <img
+                      src={url || "/placeholder.svg"}
+                      alt={`İşletme fotoğrafı ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
   )
 }
+
+// Default export'u da koruyalım
+export default FormOnizleme

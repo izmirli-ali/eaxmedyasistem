@@ -17,22 +17,22 @@ interface FotograflarFormProps {
   formData: any
   onChange: (field: string, value: any) => void
   errors: Record<string, string>
-  selectedFiles: File[]
-  setSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>
-  uploadingPhotos: boolean
-  uploadProgress: Record<string, number>
-  maxFiles: number
+  selectedFiles?: File[]
+  setSelectedFiles?: React.Dispatch<React.SetStateAction<File[]>>
+  uploadingPhotos?: boolean
+  uploadProgress?: Record<string, number>
+  maxFiles?: number
 }
 
 export function FotograflarForm({
   formData,
   onChange,
   errors,
-  selectedFiles,
-  setSelectedFiles,
-  uploadingPhotos,
-  uploadProgress,
-  maxFiles,
+  selectedFiles = [], // Varsayılan değer olarak boş dizi
+  setSelectedFiles = () => {}, // Varsayılan değer olarak boş fonksiyon
+  uploadingPhotos = false,
+  uploadProgress = {},
+  maxFiles = 10,
 }: FotograflarFormProps) {
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [dragActive, setDragActive] = useState(false)
@@ -46,6 +46,13 @@ export function FotograflarForm({
     saturation: 100,
     rotation: 0,
   })
+
+  // Mevcut fotoğrafları previewUrls'e ekle
+  useEffect(() => {
+    if (formData.fotograflar && Array.isArray(formData.fotograflar) && formData.fotograflar.length > 0) {
+      setPreviewUrls(formData.fotograflar)
+    }
+  }, [formData.fotograflar])
 
   // useRef kullanarak onChange fonksiyonunu saklayalım
   const onChangeRef = useRef(onChange)
@@ -63,7 +70,10 @@ export function FotograflarForm({
 
   // Dosyaları işle
   const handleFiles = (files: FileList) => {
-    if (selectedFiles.length + files.length > maxFiles) {
+    // selectedFiles null veya undefined ise boş dizi olarak başlat
+    const currentFiles = selectedFiles || []
+
+    if (currentFiles.length + files.length > maxFiles) {
       alert(`En fazla ${maxFiles} dosya yükleyebilirsiniz.`)
       return
     }
@@ -90,18 +100,26 @@ export function FotograflarForm({
       newPreviewUrls.push(URL.createObjectURL(file))
     }
 
-    setSelectedFiles((prev) => [...prev, ...newFiles])
+    if (setSelectedFiles) {
+      setSelectedFiles((prev) => [...prev, ...newFiles])
+    }
     setPreviewUrls((prev) => [...prev, ...newPreviewUrls])
   }
 
   // Dosya kaldırma işleyicisi
   const handleRemoveFile = (index: number) => {
-    const newSelectedFiles = [...selectedFiles]
-    newSelectedFiles.splice(index, 1)
-    setSelectedFiles(newSelectedFiles)
+    if (selectedFiles) {
+      const newSelectedFiles = [...selectedFiles]
+      newSelectedFiles.splice(index, 1)
+      if (setSelectedFiles) {
+        setSelectedFiles(newSelectedFiles)
+      }
+    }
 
     const newPreviewUrls = [...previewUrls]
-    URL.revokeObjectURL(newPreviewUrls[index]) // Bellek temizliği
+    if (newPreviewUrls[index]) {
+      URL.revokeObjectURL(newPreviewUrls[index]) // Bellek temizliği
+    }
     newPreviewUrls.splice(index, 1)
     setPreviewUrls(newPreviewUrls)
 
@@ -147,17 +165,23 @@ export function FotograflarForm({
   const handleDragEnd = () => {
     if (draggingIndex !== null && dropTargetIndex !== null && draggingIndex !== dropTargetIndex) {
       // Dosyaları yeniden sırala
-      const newSelectedFiles = [...selectedFiles]
+      if (selectedFiles) {
+        const newSelectedFiles = [...selectedFiles]
+        const movedFile = newSelectedFiles[draggingIndex]
+        if (movedFile && setSelectedFiles) {
+          newSelectedFiles.splice(draggingIndex, 1)
+          newSelectedFiles.splice(dropTargetIndex, 0, movedFile)
+          setSelectedFiles(newSelectedFiles)
+        }
+      }
+
       const newPreviewUrls = [...previewUrls]
-
-      const [movedFile] = newSelectedFiles.splice(draggingIndex, 1)
-      const [movedPreview] = newPreviewUrls.splice(draggingIndex, 1)
-
-      newSelectedFiles.splice(dropTargetIndex, 0, movedFile)
-      newPreviewUrls.splice(dropTargetIndex, 0, movedPreview)
-
-      setSelectedFiles(newSelectedFiles)
-      setPreviewUrls(newPreviewUrls)
+      const movedPreview = newPreviewUrls[draggingIndex]
+      if (movedPreview) {
+        newPreviewUrls.splice(draggingIndex, 1)
+        newPreviewUrls.splice(dropTargetIndex, 0, movedPreview)
+        setPreviewUrls(newPreviewUrls)
+      }
 
       // Ana görsel indeksini güncelle
       if (anaGorselIndex === draggingIndex) {
@@ -264,14 +288,15 @@ export function FotograflarForm({
               variant="outline"
               onClick={() => document.getElementById("fotograflar")?.click()}
               className="mt-4"
-              disabled={uploadingPhotos || selectedFiles.length >= maxFiles}
+              disabled={uploadingPhotos || (selectedFiles && selectedFiles.length >= maxFiles)}
             >
               <Upload className="mr-2 h-4 w-4" />
               Görsel Seç
             </Button>
 
             <p className="text-xs text-muted-foreground mt-2">
-              Maksimum {maxFiles} görsel yükleyebilirsiniz. {selectedFiles.length}/{maxFiles} görsel seçildi.
+              Maksimum {maxFiles} görsel yükleyebilirsiniz. {selectedFiles ? selectedFiles.length : 0}/{maxFiles} görsel
+              seçildi.
             </p>
           </div>
 
@@ -282,10 +307,10 @@ export function FotograflarForm({
             </div>
           )}
 
-          {selectedFiles.length > 0 && (
+          {previewUrls.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">Seçilen Görseller ({selectedFiles.length})</h4>
+                <h4 className="text-sm font-medium">Seçilen Görseller ({previewUrls.length})</h4>
                 <p className="text-xs text-muted-foreground">Görselleri sıralamak için sürükleyip bırakın</p>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -357,13 +382,18 @@ export function FotograflarForm({
                           <Move className="h-6 w-6" />
                         </Button>
 
-                        {uploadProgress[selectedFiles[index]?.name] !== undefined && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1">
-                            <Progress value={uploadProgress[selectedFiles[index].name]} className="h-1" />
-                          </div>
-                        )}
+                        {selectedFiles &&
+                          uploadProgress &&
+                          selectedFiles[index] &&
+                          uploadProgress[selectedFiles[index]?.name] !== undefined && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1">
+                              <Progress value={uploadProgress[selectedFiles[index].name]} className="h-1" />
+                            </div>
+                          )}
                       </div>
-                      <p className="text-xs truncate mt-1">{selectedFiles[index]?.name}</p>
+                      <p className="text-xs truncate mt-1">
+                        {selectedFiles && selectedFiles[index] ? selectedFiles[index].name : `Görsel ${index + 1}`}
+                      </p>
                     </CardContent>
                   </Card>
                 ))}

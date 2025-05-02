@@ -20,7 +20,7 @@ body {
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 0 72% 51%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
@@ -58,8 +58,8 @@ body {
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
+    --primary: 0 72% 51%;
+    --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
@@ -94,4 +94,112 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Özel Animasyonlar */
+.hero-parallax {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.section-divider {
+  position: relative;
+}
+
+.section-divider::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1rem;
+  width: 3rem;
+  height: 3px;
+  background-color: var(--primary-color);
+}
+
+.image-hover-zoom {
+  overflow: hidden;
+}
+
+.image-hover-zoom img {
+  transition: transform 0.5s ease;
+}
+
+.image-hover-zoom:hover img {
+  transform: scale(1.05);
+}
+
+/* Sticky Nav Styles */
+.sticky-nav {
+  transition: all 0.3s ease;
+}
+
+.sticky-nav.scrolled {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Fade-in Animation Delays */
+.fade-in-1 {
+  animation-delay: 0.1s;
+}
+.fade-in-2 {
+  animation-delay: 0.2s;
+}
+.fade-in-3 {
+  animation-delay: 0.3s;
+}
+.fade-in-4 {
+  animation-delay: 0.4s;
+}
+.fade-in-5 {
+  animation-delay: 0.5s;
+}
+
+/* Sosyal Medya Renkleri */
+.social-facebook {
+  color: #1877f2;
+}
+.social-instagram {
+  color: #e4405f;
+}
+.social-twitter {
+  color: #1da1f2;
+}
+.social-youtube {
+  color: #ff0000;
+}
+.social-linkedin {
+  color: #0a66c2;
+}
+
+/* Mobil Optimizasyonlar */
+@media (max-width: 768px) {
+  .mobile-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .mobile-touch-target {
+    min-height: 44px;
+  }
+}
+
+/* Özel Scroll Bar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }

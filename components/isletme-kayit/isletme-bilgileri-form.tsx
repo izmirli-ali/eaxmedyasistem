@@ -1,12 +1,114 @@
 "use client"
-import { Input } from "@/components/ui/input"
+
 import type React from "react"
 
+import { useState, useEffect } from "react"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Building, Phone, FileText } from "lucide-react"
+import { Building, Info } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { formatPhoneNumber } from "@/utils/format-helpers"
+
+// Kategori ve alt kategori verileri
+const KATEGORILER = [
+  {
+    id: "restoran",
+    name: "Restoran",
+    altKategoriler: [
+      "Türk Mutfağı",
+      "İtalyan Mutfağı",
+      "Çin Mutfağı",
+      "Japon Mutfağı",
+      "Fast Food",
+      "Deniz Ürünleri",
+      "Vejetaryen",
+      "Vegan",
+      "Kebap",
+      "Pide & Lahmacun",
+      "Dünya Mutfağı",
+    ],
+  },
+  {
+    id: "kafe",
+    name: "Kafe",
+    altKategoriler: ["Kahve Dükkanı", "Pastane", "Tatlıcı", "Çay Bahçesi", "Nargile Kafe", "Brunch"],
+  },
+  {
+    id: "bar",
+    name: "Bar & Gece Kulübü",
+    altKategoriler: ["Bar", "Pub", "Gece Kulübü", "Canlı Müzik", "Kokteyl Bar", "Bira Evi"],
+  },
+  {
+    id: "konaklama",
+    name: "Konaklama",
+    altKategoriler: ["Otel", "Pansiyon", "Apart", "Butik Otel", "Tatil Köyü", "Dağ Evi", "Villa"],
+  },
+  {
+    id: "saglik",
+    name: "Sağlık",
+    altKategoriler: ["Hastane", "Klinik", "Diş Hekimi", "Eczane", "Fizik Tedavi", "Psikolog", "Veteriner"],
+  },
+  {
+    id: "egitim",
+    name: "Eğitim",
+    altKategoriler: ["Okul", "Kurs", "Dil Okulu", "Anaokulu", "Üniversite", "Özel Ders", "Sanat Kursu"],
+  },
+  {
+    id: "alisveris",
+    name: "Alışveriş",
+    altKategoriler: ["AVM", "Mağaza", "Butik", "Market", "Elektronik", "Mobilya", "Giyim", "Kuyumcu"],
+  },
+  {
+    id: "spor",
+    name: "Spor & Fitness",
+    altKategoriler: ["Spor Salonu", "Yüzme Havuzu", "Tenis Kortu", "Futbol Sahası", "Yoga Stüdyosu", "Pilates"],
+  },
+  {
+    id: "guzellik",
+    name: "Güzellik & Bakım",
+    altKategoriler: ["Kuaför", "Güzellik Merkezi", "SPA", "Masaj Salonu", "Cilt Bakımı", "Tırnak Bakımı"],
+  },
+  {
+    id: "otomotiv",
+    name: "Otomotiv",
+    altKategoriler: ["Oto Servis", "Oto Yıkama", "Oto Galeri", "Lastikçi", "Oto Kiralama", "Oto Ekspertiz"],
+  },
+  {
+    id: "emlak",
+    name: "Emlak",
+    altKategoriler: ["Emlak Ofisi", "Müteahhit", "Mimarlık Bürosu", "İnşaat Şirketi", "Dekorasyon"],
+  },
+  {
+    id: "hizmet",
+    name: "Hizmet",
+    altKategoriler: ["Temizlik", "Tamir", "Nakliyat", "Danışmanlık", "Organizasyon", "Matbaa", "Terzi"],
+  },
+  {
+    id: "eglence",
+    name: "Eğlence",
+    altKategoriler: ["Sinema", "Tiyatro", "Bowling", "Bilardo", "Lunapark", "Oyun Salonu", "Paintball"],
+  },
+  {
+    id: "turizm",
+    name: "Turizm & Seyahat",
+    altKategoriler: ["Tur Şirketi", "Seyahat Acentesi", "Müze", "Tarihi Mekan", "Doğal Güzellik"],
+  },
+  {
+    id: "diger",
+    name: "Diğer",
+    altKategoriler: ["Dernek", "Vakıf", "Kamu Kurumu", "Dini Tesis", "Diğer"],
+  },
+]
+
+// Fiyat aralığı seçenekleri
+const FIYAT_ARALIKLARI = [
+  { id: "₺", name: "Ekonomik (₺)" },
+  { id: "₺₺", name: "Orta (₺₺)" },
+  { id: "₺₺₺", name: "Lüks (₺₺₺)" },
+  { id: "₺₺₺₺", name: "Ultra Lüks (₺₺₺₺)" },
+]
 
 interface IsletmeBilgileriFormProps {
   formData: any
@@ -15,31 +117,31 @@ interface IsletmeBilgileriFormProps {
 }
 
 export function IsletmeBilgileriForm({ formData, onChange, errors }: IsletmeBilgileriFormProps) {
-  // Telefon numarası formatlama
-  const formatPhoneNumber = (value: string) => {
-    // Sadece rakamları al
-    const digitsOnly = value.replace(/\D/g, "")
+  const [altKategoriler, setAltKategoriler] = useState<string[]>([])
 
-    // Format: (0xxx) xxx xx xx
-    if (digitsOnly.length <= 11) {
-      if (digitsOnly.length === 0) {
-        return ""
-      } else if (digitsOnly.length <= 4) {
-        return `(${digitsOnly}`
-      } else if (digitsOnly.length <= 7) {
-        return `(${digitsOnly.substring(0, 4)}) ${digitsOnly.substring(4)}`
-      } else if (digitsOnly.length <= 9) {
-        return `(${digitsOnly.substring(0, 4)}) ${digitsOnly.substring(4, 7)} ${digitsOnly.substring(7)}`
+  // Kategori değiştiğinde alt kategorileri güncelle
+  useEffect(() => {
+    if (formData.kategori) {
+      const kategori = KATEGORILER.find((k) => k.name === formData.kategori)
+      if (kategori) {
+        setAltKategoriler(kategori.altKategoriler)
+
+        // Eğer seçili alt kategori, yeni kategorinin alt kategorilerinde yoksa sıfırla
+        if (formData.alt_kategori && !kategori.altKategoriler.includes(formData.alt_kategori)) {
+          onChange("alt_kategori", "")
+        }
       } else {
-        return `(${digitsOnly.substring(0, 4)}) ${digitsOnly.substring(4, 7)} ${digitsOnly.substring(7, 9)} ${digitsOnly.substring(9)}`
+        setAltKategoriler([])
       }
+    } else {
+      setAltKategoriler([])
     }
-    return value
-  }
+  }, [formData.kategori, onChange])
 
+  // Telefon numarası formatla
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedValue = formatPhoneNumber(e.target.value)
-    onChange("telefon", formattedValue)
+    const formattedPhone = formatPhoneNumber(e.target.value)
+    onChange("telefon", formattedPhone)
   }
 
   return (
@@ -47,10 +149,10 @@ export function IsletmeBilgileriForm({ formData, onChange, errors }: IsletmeBilg
       <CardContent className="p-0 space-y-6">
         <div className="flex items-center gap-2 text-lg font-medium text-primary">
           <Building className="h-5 w-5" />
-          <h3>Temel Bilgiler</h3>
+          <h3>İşletme Bilgileri</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="isletme_adi" className={errors.isletme_adi ? "text-destructive" : ""}>
               İşletme Adı *
@@ -59,102 +161,122 @@ export function IsletmeBilgileriForm({ formData, onChange, errors }: IsletmeBilg
               id="isletme_adi"
               value={formData.isletme_adi || ""}
               onChange={(e) => onChange("isletme_adi", e.target.value)}
+              placeholder="İşletme adını girin"
               className={errors.isletme_adi ? "border-destructive" : ""}
-              placeholder="Örn: Akdeniz Restaurant"
             />
             {errors.isletme_adi && <p className="text-xs text-destructive mt-1">{errors.isletme_adi}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="slug">Slug (URL)</Label>
-            <Input
-              id="slug"
-              value={formData.slug || ""}
-              onChange={(e) => onChange("slug", e.target.value)}
-              placeholder="isletme-adi (boş bırakılırsa otomatik oluşturulur)"
-            />
-            <p className="text-xs text-muted-foreground">Boş bırakılırsa işletme adından otomatik oluşturulur</p>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="kategori" className={errors.kategori ? "text-destructive" : ""}>
+                Kategori *
+              </Label>
+              <Select value={formData.kategori || ""} onValueChange={(value) => onChange("kategori", value)}>
+                <SelectTrigger id="kategori" className={errors.kategori ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Kategori seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {KATEGORILER.map((kategori) => (
+                    <SelectItem key={kategori.id} value={kategori.name}>
+                      {kategori.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.kategori && <p className="text-xs text-destructive mt-1">{errors.kategori}</p>}
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="kategori" className={errors.kategori ? "text-destructive" : ""}>
-              Kategori *
-            </Label>
-            <Select value={formData.kategori || ""} onValueChange={(value) => onChange("kategori", value)}>
-              <SelectTrigger id="kategori" className={errors.kategori ? "border-destructive" : ""}>
-                <SelectValue placeholder="Kategori seçin" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Restoran">Restoran</SelectItem>
-                <SelectItem value="Kafe">Kafe</SelectItem>
-                <SelectItem value="Market">Market</SelectItem>
-                <SelectItem value="Otel">Otel</SelectItem>
-                <SelectItem value="Kuaför">Kuaför</SelectItem>
-                <SelectItem value="Diğer">Diğer</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.kategori && <p className="text-xs text-destructive mt-1">{errors.kategori}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="alt_kategori">Alt Kategori</Label>
-            <Input
-              id="alt_kategori"
-              value={formData.alt_kategori || ""}
-              onChange={(e) => onChange("alt_kategori", e.target.value)}
-              placeholder="Örn: İtalyan Mutfağı"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="alt_kategori">
+                Alt Kategori <span className="text-muted-foreground text-xs">(opsiyonel)</span>
+              </Label>
+              <Select
+                value={formData.alt_kategori || ""}
+                onValueChange={(value) => onChange("alt_kategori", value)}
+                disabled={!formData.kategori || altKategoriler.length === 0}
+              >
+                <SelectTrigger id="alt_kategori">
+                  <SelectValue placeholder="Alt kategori seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {altKategoriler.map((altKategori) => (
+                    <SelectItem key={altKategori} value={altKategori}>
+                      {altKategori}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="telefon" className={errors.telefon ? "text-destructive" : ""}>
-              Telefon *
+              Telefon Numarası *
             </Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="telefon"
-                value={formData.telefon || ""}
-                onChange={handlePhoneChange}
-                className={`pl-10 ${errors.telefon ? "border-destructive" : ""}`}
-                placeholder="(05XX) XXX XX XX"
-              />
-            </div>
+            <Input
+              id="telefon"
+              value={formData.telefon || ""}
+              onChange={handlePhoneChange}
+              placeholder="(___) ___ __ __"
+              className={errors.telefon ? "border-destructive" : ""}
+            />
             {errors.telefon && <p className="text-xs text-destructive mt-1">{errors.telefon}</p>}
+            <p className="text-xs text-muted-foreground">Örnek: (555) 123 45 67</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="fiyat_araligi">Fiyat Aralığı</Label>
+            <Label htmlFor="fiyat_araligi">
+              Fiyat Aralığı <span className="text-muted-foreground text-xs">(opsiyonel)</span>
+            </Label>
             <Select value={formData.fiyat_araligi || ""} onValueChange={(value) => onChange("fiyat_araligi", value)}>
-              <SelectTrigger>
+              <SelectTrigger id="fiyat_araligi">
                 <SelectValue placeholder="Fiyat aralığı seçin" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="₺">₺ (Ekonomik)</SelectItem>
-                <SelectItem value="₺₺">₺₺ (Orta)</SelectItem>
-                <SelectItem value="₺₺₺">₺₺₺ (Pahalı)</SelectItem>
-                <SelectItem value="₺₺₺₺">₺₺₺₺ (Lüks)</SelectItem>
+                {FIYAT_ARALIKLARI.map((fiyat) => (
+                  <SelectItem key={fiyat.id} value={fiyat.id}>
+                    {fiyat.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="aciklama" className={errors.aciklama ? "text-destructive" : ""}>
-              Açıklama *
+          <div className="space-y-2">
+            <Label htmlFor="sunulan_hizmetler">
+              Sunulan Hizmetler <span className="text-muted-foreground text-xs">(opsiyonel)</span>
             </Label>
-            <div className="relative">
-              <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Textarea
-                id="aciklama"
-                value={formData.aciklama || ""}
-                onChange={(e) => onChange("aciklama", e.target.value)}
-                className={`pl-10 ${errors.aciklama ? "border-destructive" : ""}`}
-                placeholder="İşletmeniz hakkında detaylı bilgi verin..."
-                rows={4}
-              />
-            </div>
+            <Textarea
+              id="sunulan_hizmetler"
+              value={formData.sunulan_hizmetler || ""}
+              onChange={(e) => onChange("sunulan_hizmetler", e.target.value)}
+              placeholder="Sunulan hizmetleri virgülle ayırarak yazın"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">Örnek: Kahvaltı, Öğle Yemeği, Akşam Yemeği, Paket Servis</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="aciklama" className={errors.aciklama ? "text-destructive" : ""}>
+              İşletme Açıklaması *
+            </Label>
+            <Textarea
+              id="aciklama"
+              value={formData.aciklama || ""}
+              onChange={(e) => onChange("aciklama", e.target.value)}
+              placeholder="İşletmenizi detaylı bir şekilde tanıtın"
+              rows={5}
+              className={errors.aciklama ? "border-destructive" : ""}
+            />
             {errors.aciklama && <p className="text-xs text-destructive mt-1">{errors.aciklama}</p>}
-            <p className="text-xs text-muted-foreground">En az 20 karakter olmalıdır</p>
+            <div className="flex items-start gap-2 mt-2 text-amber-600 bg-amber-50 p-2 rounded-md">
+              <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <p className="text-xs">
+                İşletme açıklaması en az 20 karakter olmalıdır. Detaylı ve açıklayıcı bir tanıtım yazısı, işletmenizin
+                daha fazla kişiye ulaşmasını sağlar.
+              </p>
+            </div>
           </div>
         </div>
       </CardContent>

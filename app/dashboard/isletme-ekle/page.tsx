@@ -14,6 +14,8 @@ import { KonumBilgileriForm } from "@/components/isletme-kayit/konum-bilgileri-f
 import { IletisimBilgileriForm } from "@/components/isletme-kayit/iletisim-bilgileri-form"
 import { SEOBilgileriForm } from "@/components/isletme-kayit/seo-bilgileri-form"
 import { FotograflarForm } from "@/components/isletme-kayit/fotograflar-form"
+import { OzelliklerForm } from "@/components/isletme-kayit/ozellikler-form"
+import { CalismaSaatleriForm } from "@/components/isletme-kayit/calisma-saatleri-form"
 import { useAutoSave } from "@/hooks/use-auto-save"
 import { unformatPhoneNumber } from "@/utils/format-helpers"
 import {
@@ -28,6 +30,8 @@ import {
   Phone,
   Search,
   ImageIcon,
+  Clock,
+  Settings,
 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { validateAndImproveAddress } from "@/utils/location-helpers"
@@ -39,13 +43,14 @@ const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"
 const MAX_FILE_SIZE = 5 // MB
 const MAX_FILES = 10 // Maksimum dosya sayısı
 
-// Form veri tipi
+// Form veri tipi - isletmeler2 tablosuna uygun
 interface FormValues {
   isletme_adi: string
   slug?: string
   adres: string
   telefon: string
   website?: string
+  email?: string
   aciklama: string
   harita_linki?: string
   koordinatlar?: string
@@ -55,6 +60,7 @@ interface FormValues {
   alt_kategori?: string
   sunulan_hizmetler?: string
   calisma_saatleri?: string
+  calisma_gunleri?: Record<string, any>
   sosyal_medya?: {
     facebook?: string
     instagram?: string
@@ -68,11 +74,11 @@ interface FormValues {
   seo_canonical?: string
   fotograf_url?: string
   fotograflar?: string[]
-  email?: string
   fiyat_araligi?: string
   sehir: string
   ilce?: string
   url_slug?: string
+  // Özellikler
   engelli_erisim?: boolean
   wifi?: boolean
   otopark?: boolean
@@ -80,6 +86,24 @@ interface FormValues {
   rezervasyon?: boolean
   paket_servis?: boolean
   one_cikan?: boolean
+  bebek_dostu?: boolean
+  evcil_hayvan_dostu?: boolean
+  sigara_alani?: boolean
+  canli_muzik?: boolean
+  kahvalti?: boolean
+  aksam_yemegi?: boolean
+  tv?: boolean
+  ucretsiz_teslimat?: boolean
+  nakit_odeme?: boolean
+  online_odeme?: boolean
+  temassiz_odeme?: boolean
+  organik_urunler?: boolean
+  glutensiz_secenekler?: boolean
+  vegan_secenekler?: boolean
+  // Diğer alanlar
+  aktif?: boolean
+  onay_durumu?: string
+  goruntulenme_sayisi?: number
   [key: string]: any
 }
 
@@ -88,6 +112,8 @@ const formSteps = [
   { id: "isletme-bilgileri", title: "İşletme Bilgileri", icon: Building },
   { id: "konum-bilgileri", title: "Konum Bilgileri", icon: MapPin },
   { id: "iletisim-bilgileri", title: "İletişim Bilgileri", icon: Phone },
+  { id: "calisma-saatleri", title: "Çalışma Saatleri", icon: Clock },
+  { id: "ozellikler", title: "Özellikler", icon: Settings },
   { id: "seo-bilgileri", title: "SEO Bilgileri", icon: Search },
   { id: "isletme-gorselleri", title: "İşletme Görselleri", icon: ImageIcon },
 ]
@@ -99,6 +125,7 @@ const initialFormData: FormValues = {
   adres: "",
   telefon: "",
   website: "",
+  email: "",
   aciklama: "",
   harita_linki: "",
   koordinatlar: "",
@@ -108,6 +135,15 @@ const initialFormData: FormValues = {
   alt_kategori: "",
   sunulan_hizmetler: "",
   calisma_saatleri: "",
+  calisma_gunleri: {
+    pazartesi: { acik: true, acilis: "09:00", kapanis: "18:00", mola_var: false },
+    sali: { acik: true, acilis: "09:00", kapanis: "18:00", mola_var: false },
+    carsamba: { acik: true, acilis: "09:00", kapanis: "18:00", mola_var: false },
+    persembe: { acik: true, acilis: "09:00", kapanis: "18:00", mola_var: false },
+    cuma: { acik: true, acilis: "09:00", kapanis: "18:00", mola_var: false },
+    cumartesi: { acik: true, acilis: "10:00", kapanis: "16:00", mola_var: false },
+    pazar: { acik: true, acilis: "10:00", kapanis: "16:00", mola_var: false },
+  },
   sosyal_medya: {
     facebook: "",
     instagram: "",
@@ -121,7 +157,6 @@ const initialFormData: FormValues = {
   seo_canonical: "",
   fotograf_url: "",
   fotograflar: [],
-  email: "",
   fiyat_araligi: "",
   sehir: "",
   ilce: "",
@@ -133,6 +168,23 @@ const initialFormData: FormValues = {
   rezervasyon: false,
   paket_servis: false,
   one_cikan: false,
+  bebek_dostu: false,
+  evcil_hayvan_dostu: false,
+  sigara_alani: false,
+  canli_muzik: false,
+  kahvalti: false,
+  aksam_yemegi: false,
+  tv: false,
+  ucretsiz_teslimat: false,
+  nakit_odeme: false,
+  online_odeme: false,
+  temassiz_odeme: false,
+  organik_urunler: false,
+  glutensiz_secenekler: false,
+  vegan_secenekler: false,
+  aktif: true,
+  onay_durumu: "beklemede",
+  goruntulenme_sayisi: 0,
 }
 
 export default function IsletmeEkleForm() {
@@ -484,6 +536,27 @@ export default function IsletmeEkleForm() {
     return successfulUrls
   }
 
+  // Boş string değerlerini null'a çevir
+  const cleanFormData = (data: any): any => {
+    const cleanedData: any = {}
+
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === "string") {
+        cleanedData[key] = value.trim() === "" ? null : value
+      } else if (typeof value === "object" && value !== null) {
+        if (Array.isArray(value)) {
+          cleanedData[key] = value.length === 0 ? null : value
+        } else {
+          cleanedData[key] = cleanFormData(value)
+        }
+      } else {
+        cleanedData[key] = value
+      }
+    }
+
+    return cleanedData
+  }
+
   // Form gönderimi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -523,14 +596,18 @@ export default function IsletmeEkleForm() {
       }
 
       // Form verilerini işle
-      const isletmeData = {
+      let isletmeData = {
         ...formData,
         telefon: unformatPhoneNumber(formData.telefon), // Telefon numarasını formatla
-        user_id: sessionData.session.user.id, // Kullanıcı ID'sini ekle
+        kullanici_id: sessionData.session.user.id, // Kullanıcı ID'sini ekle
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         slug: formData.url_slug || slugify(formData.isletme_adi), // Slug oluştur
+        url_slug: `${formData.sehir.toLowerCase()}/${slugify(formData.isletme_adi)}`, // URL slug oluştur
       }
+
+      // Boş string değerlerini null'a çevir
+      isletmeData = cleanFormData(isletmeData)
 
       // Resimleri yükle
       let uploadedUrls: string[] = []
@@ -549,14 +626,14 @@ export default function IsletmeEkleForm() {
         }
       }
 
-      // Veritabanına kaydet
+      // Veritabanına kaydet - isletmeler2 tablosuna
       const { data, error } = await supabase
-        .from("isletmeler")
+        .from("isletmeler2")
         .insert([
           {
             ...isletmeData,
-            fotograflar: uploadedUrls.length > 0 ? uploadedUrls : undefined, // Yüklenen resimlerin URL'lerini ekle
-            fotograf_url: uploadedUrls.length > 0 ? uploadedUrls[0] : isletmeData.fotograf_url, // İlk resmi ana resim olarak ayarla
+            fotograflar: uploadedUrls.length > 0 ? uploadedUrls : null, // Yüklenen resimlerin URL'lerini ekle
+            fotograf_url: uploadedUrls.length > 0 ? uploadedUrls[0] : isletmeData.fotograf_url || null, // İlk resmi ana resim olarak ayarla
           },
         ])
         .select()
@@ -588,7 +665,7 @@ export default function IsletmeEkleForm() {
       })
 
       // Yönlendirme
-      router.push("/dashboard")
+      router.push("/admin/isletme-listesi")
       router.refresh()
     } catch (error: any) {
       console.error("İşletme kaydetme hatası:", error)
@@ -699,7 +776,7 @@ export default function IsletmeEkleForm() {
         <form onSubmit={handleSubmit}>
           <CardContent className="p-6">
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-6">
+              <TabsList className="grid grid-cols-2 md:grid-cols-7 mb-6">
                 {formSteps.map((step) => (
                   <TabsTrigger key={step.id} value={step.id} className="text-xs md:text-sm">
                     {step.icon === ImageIcon ? (
@@ -722,6 +799,14 @@ export default function IsletmeEkleForm() {
 
               <TabsContent value="iletisim-bilgileri">
                 <IletisimBilgileriForm formData={formData} onChange={handleChange} errors={errors} />
+              </TabsContent>
+
+              <TabsContent value="calisma-saatleri">
+                <CalismaSaatleriForm formData={formData} onChange={handleChange} errors={errors} />
+              </TabsContent>
+
+              <TabsContent value="ozellikler">
+                <OzelliklerForm formData={formData} onChange={handleChange} errors={errors} />
               </TabsContent>
 
               <TabsContent value="seo-bilgileri">

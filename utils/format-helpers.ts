@@ -5,7 +5,7 @@ export function formatPhoneNumber(value: string): string {
   if (!value) return value
 
   // Sadece rakamları al
-  const phoneNumber = value.replace(/[^\d]/g, "")
+  const phoneNumber = value.replace(/\D/g, "")
 
   // Telefon numarası formatı
   if (phoneNumber.length < 4) return phoneNumber
@@ -19,4 +19,23 @@ export function formatPhoneNumber(value: string): string {
  */
 export function unformatPhoneNumber(value: string): string {
   return value.replace(/[^\d]/g, "")
+}
+
+/**
+ * URL dostu slug oluşturur
+ * @param text Slugify yapılacak metin
+ * @returns URL dostu slug
+ */
+export function slugify(text: string): string {
+  return text
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]+/g, "")
+    .replace(/--+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "")
 }

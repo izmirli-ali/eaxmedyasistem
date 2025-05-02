@@ -37,7 +37,10 @@ export default function DashboardPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [activeTab, setActiveTab] = useState("isletmeler")
+  // Varsayılan sekmeyi "harita" olarak değiştirdik
+  const [activeTab, setActiveTab] = useState("harita")
+
+  // Diğer kodlar aynı kalacak...
 
   // Supabase istemcisini useMemo ile optimize edelim
   const supabase = useMemo(() => createClient(), [])
@@ -349,10 +352,27 @@ export default function DashboardPage() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="isletmeler">Son Eklenen İşletmeler</TabsTrigger>
           <TabsTrigger value="harita">İşletme Haritası</TabsTrigger>
+          <TabsTrigger value="isletmeler">Son Eklenen İşletmeler</TabsTrigger>
           <TabsTrigger value="sozlesmeler">Yaklaşan Sözleşme Bitişleri</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="harita">
+          {/* İşletme Haritası bileşeni */}
+          {loading ? (
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48 mb-2" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent>
+                <div className="w-full h-[400px] bg-gray-100 animate-pulse rounded-md"></div>
+              </CardContent>
+            </Card>
+          ) : (
+            <IsletmeHaritasi isletmeler={stats.koordinatliIsletmeler} />
+          )}
+        </TabsContent>
 
         <TabsContent value="isletmeler">
           <Card>
@@ -410,23 +430,6 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="harita">
-          {/* İşletme Haritası bileşeni */}
-          {loading ? (
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-48 mb-2" />
-                <Skeleton className="h-4 w-64" />
-              </CardHeader>
-              <CardContent>
-                <div className="w-full h-[400px] bg-gray-100 animate-pulse rounded-md"></div>
-              </CardContent>
-            </Card>
-          ) : (
-            <IsletmeHaritasi isletmeler={stats.koordinatliIsletmeler} />
-          )}
         </TabsContent>
 
         <TabsContent value="sozlesmeler">

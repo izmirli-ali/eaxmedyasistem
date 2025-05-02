@@ -1,4 +1,6 @@
-// CSRF koruması için yardımcı fonksiyonlar
+/**
+ * CSRF koruması için yardımcı fonksiyonlar
+ */
 import { cookies } from "next/headers"
 import type { NextRequest } from "next/server"
 import crypto from "crypto"

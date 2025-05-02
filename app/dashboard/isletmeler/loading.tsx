@@ -1,9 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function IsletmeListesiLoading() {
+export default function IsletmelerLoading() {
   return (
-    <div className="container mx-auto py-6 max-w-7xl">
+    <div className="container py-6 max-w-7xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
           <Skeleton className="h-8 w-48 mb-2" />
@@ -42,16 +42,9 @@ export default function IsletmeListesiLoading() {
                     <Skeleton className="h-4 w-2/3" />
                   </div>
                 </CardContent>
-                <div className="p-6 pt-0 flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <Skeleton className="h-10 flex-1" />
-                    <Skeleton className="h-10 flex-1" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-8 flex-1" />
-                    <Skeleton className="h-8 flex-1" />
-                  </div>
-                  <Skeleton className="h-8 w-full" />
+                <div className="p-6 pt-0 flex gap-2">
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 flex-1" />
                 </div>
               </Card>
             ))}

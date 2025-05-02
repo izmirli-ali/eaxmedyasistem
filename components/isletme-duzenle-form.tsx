@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -38,18 +38,21 @@ import { CalismaSaatleriForm } from "@/components/isletme-kayit/calisma-saatleri
 import { OzelliklerForm } from "@/components/isletme-kayit/ozellikler-form"
 import { FotograflarForm } from "@/components/isletme-kayit/fotograflar-form"
 import { SEOBilgileriForm } from "@/components/isletme-kayit/seo-bilgileri-form"
-import { FormOnizleme } from "@/components/isletme-kayit/form-onizleme"
-import { LoadingOverlay } from "@/components/ui/loading-overlay"
+import FormOnizleme from "@/components/isletme-kayit/form-onizleme"
 import { useAutoSave } from "@/hooks/use-auto-save"
 import { ArrowLeft, Eye, Save, Trash2, AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react"
 import { slugify } from "@/utils/format-helpers"
+import { supabase } from "@/supabase"
+import type { Business } from "@/types"
 
-export default function IsletmeDuzenleSayfasi() {
+interface IsletmeDuzenleFormProps {
+  business: Business
+}
+
+export default function IsletmeDuzenleForm({ business }: IsletmeDuzenleFormProps) {
   const router = useRouter()
-  const { id } = useParams<{ id: string }>()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("temel-bilgiler")
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -59,151 +62,63 @@ export default function IsletmeDuzenleSayfasi() {
 
   // İşletme verileri için başlangıç durumu
   const [formData, setFormData] = useState({
-    isletme_adi: "",
-    slug: "",
-    kategori: "",
-    alt_kategori: "",
-    adres: "",
-    sehir: "",
-    ilce: "",
-    telefon: "",
-    website: "",
-    email: "",
-    aciklama: "",
-    latitude: "",
-    longitude: "",
-    koordinatlar: "",
-    harita_linki: "",
-    calisma_saatleri: "",
-    calisma_gunleri: {},
-    sosyal_medya: {
+    id: business.id,
+    isletme_adi: business.isletme_adi || "",
+    slug: business.slug || "",
+    kategori: business.kategori || "",
+    alt_kategori: business.alt_kategori || "",
+    adres: business.adres || "",
+    sehir: business.sehir || "",
+    ilce: business.ilce || "",
+    telefon: business.telefon || "",
+    website: business.website || "",
+    email: business.email || "",
+    aciklama: business.aciklama || "",
+    latitude: business.latitude || "",
+    longitude: business.longitude || "",
+    koordinatlar: business.koordinatlar || "",
+    harita_linki: business.harita_linki || "",
+    calisma_saatleri: business.calisma_saatleri || "",
+    calisma_gunleri: business.calisma_gunleri || {},
+    sosyal_medya: business.sosyal_medya || {
       facebook: "",
       instagram: "",
       twitter: "",
       youtube: "",
       linkedin: "",
     },
-    fotograf_url: "",
-    fotograflar: [],
-    seo_baslik: "",
-    seo_aciklama: "",
-    seo_anahtar_kelimeler: "",
-    seo_canonical: "",
-    fiyat_araligi: "",
-    sunulan_hizmetler: "",
-    aktif: true,
-    one_cikan: false,
-    wifi: false,
-    otopark: false,
-    kredi_karti: false,
-    rezervasyon: false,
-    paket_servis: false,
-    engelli_erisim: false,
-    bebek_dostu: false,
-    evcil_hayvan_dostu: false,
-    sigara_alani: false,
-    canli_muzik: false,
-    kahvalti: false,
-    aksam_yemegi: false,
-    tv: false,
-    ucretsiz_teslimat: false,
-    nakit_odeme: false,
-    online_odeme: false,
-    temassiz_odeme: false,
-    organik_urunler: false,
-    glutensiz_secenekler: false,
-    vegan_secenekler: false,
+    fotograf_url: business.fotograf_url || "",
+    fotograflar: business.fotograflar || [],
+    seo_baslik: business.seo_baslik || "",
+    seo_aciklama: business.seo_aciklama || "",
+    seo_anahtar_kelimeler: business.seo_anahtar_kelimeler || "",
+    seo_canonical: business.seo_canonical || "",
+    fiyat_araligi: business.fiyat_araligi || "",
+    sunulan_hizmetler: business.sunulan_hizmetler || "",
+    aktif: business.aktif !== false, // Varsayılan olarak true
+    one_cikan: business.one_cikan || false,
+    // Özellikler
+    wifi: business.wifi || false,
+    otopark: business.otopark || false,
+    kredi_karti: business.kredi_karti || false,
+    rezervasyon: business.rezervasyon || false,
+    paket_servis: business.paket_servis || false,
+    engelli_erisim: business.engelli_erisim || false,
+    bebek_dostu: business.bebek_dostu || false,
+    evcil_hayvan_dostu: business.evcil_hayvan_dostu || false,
+    sigara_alani: business.sigara_alani || false,
+    canli_muzik: business.canli_muzik || false,
+    kahvalti: business.kahvalti || false,
+    aksam_yemegi: business.aksam_yemegi || false,
+    tv: business.tv || false,
+    ucretsiz_teslimat: business.ucretsiz_teslimat || false,
+    nakit_odeme: business.nakit_odeme || false,
+    online_odeme: business.online_odeme || false,
+    temassiz_odeme: business.temassiz_odeme || false,
+    organik_urunler: business.organik_urunler || false,
+    glutensiz_secenekler: business.glutensiz_secenekler || false,
+    vegan_secenekler: business.vegan_secenekler || false,
   })
-
-  // İşletme verilerini getir
-  useEffect(() => {
-    const fetchIsletme = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch(`/api/isletmeler2/${id}`)
-        if (!response.ok) {
-          throw new Error("İşletme bilgileri alınamadı")
-        }
-        const data = await response.json()
-
-        // Verileri formData'ya dönüştür
-        const processedData = {
-          ...data,
-          // Null değerleri boş string olarak ayarla
-          isletme_adi: data.isletme_adi || "",
-          slug: data.slug || "",
-          kategori: data.kategori || "",
-          alt_kategori: data.alt_kategori || "",
-          adres: data.adres || "",
-          sehir: data.sehir || "",
-          ilce: data.ilce || "",
-          telefon: data.telefon || "",
-          website: data.website || "",
-          email: data.email || "",
-          aciklama: data.aciklama || "",
-          latitude: data.latitude || "",
-          longitude: data.longitude || "",
-          koordinatlar: data.koordinatlar || "",
-          harita_linki: data.harita_linki || "",
-          calisma_saatleri: data.calisma_saatleri || "",
-          calisma_gunleri: data.calisma_gunleri || {},
-          sosyal_medya: data.sosyal_medya || {
-            facebook: "",
-            instagram: "",
-            twitter: "",
-            youtube: "",
-            linkedin: "",
-          },
-          fotograf_url: data.fotograf_url || "",
-          fotograflar: data.fotograflar || [],
-          seo_baslik: data.seo_baslik || "",
-          seo_aciklama: data.seo_aciklama || "",
-          seo_anahtar_kelimeler: data.seo_anahtar_kelimeler || "",
-          seo_canonical: data.seo_canonical || "",
-          fiyat_araligi: data.fiyat_araligi || "",
-          sunulan_hizmetler: data.sunulan_hizmetler || "",
-          aktif: data.aktif !== false, // Varsayılan olarak true
-          one_cikan: data.one_cikan || false,
-          // Özellikler
-          wifi: data.wifi || false,
-          otopark: data.otopark || false,
-          kredi_karti: data.kredi_karti || false,
-          rezervasyon: data.rezervasyon || false,
-          paket_servis: data.paket_servis || false,
-          engelli_erisim: data.engelli_erisim || false,
-          bebek_dostu: data.bebek_dostu || false,
-          evcil_hayvan_dostu: data.evcil_hayvan_dostu || false,
-          sigara_alani: data.sigara_alani || false,
-          canli_muzik: data.canli_muzik || false,
-          kahvalti: data.kahvalti || false,
-          aksam_yemegi: data.aksam_yemegi || false,
-          tv: data.tv || false,
-          ucretsiz_teslimat: data.ucretsiz_teslimat || false,
-          nakit_odeme: data.nakit_odeme || false,
-          online_odeme: data.online_odeme || false,
-          temassiz_odeme: data.temassiz_odeme || false,
-          organik_urunler: data.organik_urunler || false,
-          glutensiz_secenekler: data.glutensiz_secenekler || false,
-          vegan_secenekler: data.vegan_secenekler || false,
-        }
-
-        setFormData(processedData)
-      } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Hata!",
-          description: error.message,
-        })
-        console.error("İşletme bilgileri alınırken hata oluştu:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    if (id) {
-      fetchIsletme()
-    }
-  }, [id, toast])
 
   // Otomatik kaydetme
   useAutoSave({
@@ -211,7 +126,7 @@ export default function IsletmeDuzenleSayfasi() {
     onSave: async (data) => {
       try {
         // Taslak olarak kaydet
-        await fetch(`/api/isletmeler2/${id}/taslak`, {
+        await fetch(`/api/isletmeler2/${business.id}/taslak`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
@@ -223,7 +138,7 @@ export default function IsletmeDuzenleSayfasi() {
       }
     },
     interval: 60000, // 60 saniyede bir
-    enabled: !isLoading && !isSaving, // Sayfa yüklenirken veya kaydederken otomatik kaydetmeyi devre dışı bırak
+    enabled: !isSaving, // Kaydederken otomatik kaydetmeyi devre dışı bırak
   })
 
   // Form alanı değişikliği
@@ -335,17 +250,21 @@ export default function IsletmeDuzenleSayfasi() {
         await handleUploadPhotos()
       }
 
-      // İşletme bilgilerini güncelle
-      const response = await fetch(`/api/isletmeler2/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
+      // URL slug oluştur
+      const url_slug = `${formData.sehir?.toLowerCase()}/${formData.slug}`.replace(/\s+/g, "-")
 
-      if (!response.ok) {
-        throw new Error("İşletme güncellenemedi")
+      // İşletme bilgilerini güncelle - isletmeler2 tablosunu kullan
+      const { error } = await supabase
+        .from("isletmeler2")
+        .update({
+          ...formData,
+          url_slug,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", business.id)
+
+      if (error) {
+        throw new Error("İşletme güncellenemedi: " + error.message)
       }
 
       toast({
@@ -354,7 +273,8 @@ export default function IsletmeDuzenleSayfasi() {
       })
 
       // İşletme listesine yönlendir
-      router.push("/dashboard/isletmeler")
+      router.push("/admin/isletme-listesi")
+      router.refresh()
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -372,12 +292,11 @@ export default function IsletmeDuzenleSayfasi() {
     try {
       setIsSaving(true)
 
-      const response = await fetch(`/api/isletmeler2/${id}`, {
-        method: "DELETE",
-      })
+      // isletmeler2 tablosundan sil
+      const { error } = await supabase.from("isletmeler2").delete().eq("id", business.id)
 
-      if (!response.ok) {
-        throw new Error("İşletme silinemedi")
+      if (error) {
+        throw new Error("İşletme silinemedi: " + error.message)
       }
 
       toast({
@@ -386,7 +305,8 @@ export default function IsletmeDuzenleSayfasi() {
       })
 
       // İşletme listesine yönlendir
-      router.push("/dashboard/isletmeler")
+      router.push("/admin/isletme-listesi")
+      router.refresh()
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -498,10 +418,6 @@ export default function IsletmeDuzenleSayfasi() {
         ? "İşletme artık ana sayfada öne çıkan işletmeler arasında gösterilecek."
         : "İşletme artık ana sayfada öne çıkan işletmeler arasında gösterilmeyecek.",
     })
-  }
-
-  if (isLoading) {
-    return <LoadingOverlay message="İşletme bilgileri yükleniyor..." />
   }
 
   return (
@@ -693,7 +609,10 @@ export default function IsletmeDuzenleSayfasi() {
                 <h4 className="text-sm font-medium">İşletme Bilgileri</h4>
                 <div className="text-sm">
                   <p>
-                    <span className="font-medium">ID:</span> {id}
+                    <span className="font-medium">ID:</span> {business.id}
+                  </p>
+                  <p>
+                    <span className="font-medium">URL Slug:</span> {business.url_slug || "-"}
                   </p>
                   <p>
                     <span className="font-medium">Kategori:</span> {formData.kategori || "-"}
@@ -703,11 +622,11 @@ export default function IsletmeDuzenleSayfasi() {
                   </p>
                   <p>
                     <span className="font-medium">Oluşturulma:</span>{" "}
-                    {formData.created_at ? new Date(formData.created_at).toLocaleDateString() : "-"}
+                    {business.created_at ? new Date(business.created_at).toLocaleDateString() : "-"}
                   </p>
                   <p>
                     <span className="font-medium">Son Güncelleme:</span>{" "}
-                    {formData.updated_at ? new Date(formData.updated_at).toLocaleDateString() : "-"}
+                    {business.updated_at ? new Date(business.updated_at).toLocaleDateString() : "-"}
                   </p>
                 </div>
               </div>
@@ -720,7 +639,7 @@ export default function IsletmeDuzenleSayfasi() {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => window.open(`/isletme/${formData.slug || id}`, "_blank")}
+                    onClick={() => window.open(`/isletme/${business.url_slug || business.id}`, "_blank")}
                   >
                     <Eye className="mr-2 h-4 w-4" />
                     İşletme Sayfasını Görüntüle
@@ -729,7 +648,7 @@ export default function IsletmeDuzenleSayfasi() {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => router.push("/dashboard/isletmeler")}
+                    onClick={() => router.push("/admin/isletme-listesi")}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     İşletme Listesine Dön
