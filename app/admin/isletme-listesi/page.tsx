@@ -297,7 +297,7 @@ export default function IsletmeListesi() {
             </Select>
           </div>
 
-          {(searchTerm || kategoriFilter || sehirFilter || durumFilter) && (
+          {(searchTerm || kategoriFilter !== "all" || sehirFilter !== "all" || durumFilter !== "all") && (
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
@@ -305,9 +305,9 @@ export default function IsletmeListesi() {
                   Aktif filtreler:{" "}
                   {[
                     searchTerm && "Arama",
-                    kategoriFilter && `Kategori: ${kategoriFilter}`,
-                    sehirFilter && `Şehir: ${sehirFilter}`,
-                    durumFilter &&
+                    kategoriFilter !== "all" && `Kategori: ${kategoriFilter}`,
+                    sehirFilter !== "all" && `Şehir: ${sehirFilter}`,
+                    durumFilter !== "all" &&
                       `Durum: ${durumFilter === "aktif" ? "Aktif" : durumFilter === "pasif" ? "Pasif" : "Öne Çıkan"}`,
                   ]
                     .filter(Boolean)
@@ -541,11 +541,7 @@ export default function IsletmeListesi() {
 
                   <CardFooter className="flex flex-col gap-2 pt-0">
                     <div className="flex justify-between w-full gap-2">
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => router.push(getEditUrl(business))}
-                      >
+                      <Button variant="outline" className="flex-1" onClick={() => router.push(getEditUrl(business))}>
                         <Edit className="mr-2 h-4 w-4" />
                         Düzenle
                       </Button>
@@ -629,9 +625,8 @@ export default function IsletmeListesi() {
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-muted/30 p-4 rounded-lg">
             <div className="text-sm text-muted-foreground">
-              Toplam <span className="font-medium">{filteredBusinesses.length}</span> işletme,
-              <span className="font-medium"> {currentPage}</span>/<span className="font-medium">{totalPages}</span>{" "}
-              sayfa
+              Toplam <span className="font-medium">{filteredBusinesses.length}</span> işletme,{" "}
+              <span className="font-medium">{currentPage}</span>/<span className="font-medium">{totalPages}</span> sayfa
             </div>
 
             <div className="flex items-center gap-2">
@@ -639,5 +634,41 @@ export default function IsletmeListesi() {
                 <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="Sayfa başına" />
                 </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="12">12</SelectItem>
+                  <SelectItem value="24">24</SelectItem>
+                  <SelectItem value="36">36</SelectItem>
+                  <SelectItem value="48">48</SelectItem>
+                </SelectContent>
               </Select>
-\
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <span className="text-sm w-12 text-center">
+                  {currentPage}/{totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

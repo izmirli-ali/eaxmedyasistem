@@ -1,5 +1,5 @@
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
 
-export default function HaritaLoading() {
+export default function Loading() {
   return <LoadingOverlay message="Harita yükleniyor..." />
 }
