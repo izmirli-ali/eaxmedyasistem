@@ -216,25 +216,29 @@ const initialFormData: BasvuruFormData = {
 // Paket bilgileri
 const PAKETLER = [
   {
-    id: "yillik",
-    title: "Yıllık Paket",
+    id: "yillik-klasik",
+    title: "Yıllık Klasik Paket",
     price: "₺2,000 + KDV",
-    description: "Yıllık ödeme ile %20 indirim",
-    features: ["Sınırsız işletme kaydı", "7/24 destek", "Özel panel", "SEO optimizasyonu"],
+    description: "Tek seferlik SEO optimizasyonu",
+    features: [
+      "1 işletme kaydı",
+      "Google'da indekslenme garantisi",
+      "SEO optimizasyonu (tek seferlik)",
+      "İşletmeye özel paylaşım sayfası",
+    ],
   },
   {
-    id: "aylik",
-    title: "Aylık Paket",
-    price: "₺200 + KDV",
-    description: "Aylık ödeme, taahhüt yok",
-    features: ["5 işletme kaydı", "Mesai saatleri destek", "Standart panel", "Temel SEO"],
-  },
-  {
-    id: "tek-seferlik",
-    title: "Tek Seferlik",
-    price: "₺1,000 + KDV",
-    description: "Tek seferlik ödeme",
-    features: ["1 işletme kaydı", "30 gün destek", "Temel panel", "Manuel SEO"],
+    id: "yillik-premium",
+    title: "Yıllık Premium Paket",
+    price: "₺3,500 + KDV",
+    description: "Sürekli güncellenen SEO optimizasyonu",
+    features: [
+      "1 işletme kaydı",
+      "Her ay SEO güncellemesi",
+      "Anasayfada gösterim",
+      "Öne çıkan işletme etiketi",
+      "Haftalık performans raporu",
+    ],
   },
 ]
 
@@ -1015,7 +1019,7 @@ export function BasvuruForm({ paketTipi = "", onSuccess, onCancel }: BasvuruForm
 
               <div className={cn("space-y-4", errors.paket_tipi ? "border border-destructive rounded-md p-4" : "")}>
                 <p className="text-sm text-muted-foreground mb-2">Lütfen aşağıdaki paketlerden birini seçin *</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   {PAKETLER.map((paket) => (
                     <div
                       key={paket.id}

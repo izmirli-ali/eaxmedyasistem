@@ -1,13 +1,23 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Search, Filter, Eye, CheckCircle, XCircle, MoreHorizontal, AlertCircle } from "lucide-react"
+import {
+  Loader2,
+  Search,
+  Filter,
+  Eye,
+  CheckCircle,
+  XCircle,
+  MoreHorizontal,
+  AlertCircle,
+  DollarSign,
+} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
@@ -21,26 +31,43 @@ import { format } from "date-fns"
 import { tr } from "date-fns/locale"
 import { useToast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 
-// Supabase istemcisini oluştur
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
-)
+// Başvuru tipi - mevcut tabloya göre güncellendi
+type Basvuru = {
+  id: string
+  isletme_adi: string
+  kategori: string | null
+  telefon: string
+  email: string
+  website: string | null
+  adres: string | null
+  sehir: string
+  yetkili_adi: string
+  yetkili_soyadi: string
+  yetkili_telefon: string
+  yetkili_email: string
+  paket_turu: string
+  paket_adi: string
+  notlar: string | null
+  durum: string
+  created_at: string
+  updated_at: string
+  atanan_temsilci: string | null
+  odeme_durumu: string
+  isletme_id: string | null
+}
 
 // Başvuru durumu için renk belirleme
 const getDurumBadgeColor = (durum: string) => {
-  switch (durum) {
-    case "Yeni":
-    case "yeni":
+  switch (durum.toLowerCase()) {
+    case "beklemede":
       return "bg-blue-500"
-    case "İnceleniyor":
     case "inceleniyor":
       return "bg-yellow-500"
-    case "Onaylandı":
     case "onaylandi":
+    case "onaylandı":
       return "bg-green-500"
-    case "Reddedildi":
     case "reddedildi":
       return "bg-red-500"
     default:
@@ -50,12 +77,13 @@ const getDurumBadgeColor = (durum: string) => {
 
 // Durum değerini Türkçe'ye çevirme
 const getDurumAdi = (durum: string) => {
-  switch (durum) {
-    case "yeni":
-      return "Yeni"
+  switch (durum.toLowerCase()) {
+    case "beklemede":
+      return "Beklemede"
     case "inceleniyor":
       return "İnceleniyor"
     case "onaylandi":
+    case "onaylandı":
       return "Onaylandı"
     case "reddedildi":
       return "Reddedildi"
@@ -64,43 +92,34 @@ const getDurumAdi = (durum: string) => {
   }
 }
 
-// Paket tipini Türkçe'ye çevirme
-const getPaketAdi = (paketTipi: string) => {
-  switch (paketTipi) {
-    case "yillik":
-      return "Yıllık Paket (₺2,000 + KDV)"
-    case "aylik":
-      return "Aylık Paket (₺200 + KDV)"
-    case "tek-seferlik":
-      return "Tek Seferlik (₺1,000 + KDV)"
-    case "belirsiz":
-      return "Kararsız (Bilgi İstiyor)"
+// Ödeme durumu için renk belirleme
+const getOdemeDurumBadgeColor = (durum: string) => {
+  switch (durum.toLowerCase()) {
+    case "beklemede":
+      return "bg-blue-500"
+    case "odendi":
+    case "ödendi":
+      return "bg-green-500"
+    case "iptal":
+      return "bg-red-500"
     default:
-      return paketTipi || "Belirtilmemiş"
+      return "bg-gray-500"
   }
 }
 
-// Başvuru tipi
-type Basvuru = {
-  id: string
-  isletme_adi: string
-  kategori: string
-  isletme_telefonu: string
-  isletme_adresi: string
-  sehir: string
-  ilce: string | null
-  yetkili_adi: string
-  yetkili_soyadi: string
-  yetkili_telefonu: string
-  yetkili_email: string | null
-  paket_turu: string | null
-  website: string | null
-  aciklama: string | null
-  durum: string
-  basvuru_tarihi: string
-  notlar: string | null
-  atanan_kullanici: string | null
-  updated_at: string
+// Ödeme durumu değerini Türkçe'ye çevirme
+const getOdemeDurumAdi = (durum: string) => {
+  switch (durum.toLowerCase()) {
+    case "beklemede":
+      return "Beklemede"
+    case "odendi":
+    case "ödendi":
+      return "Ödendi"
+    case "iptal":
+      return "İptal"
+    default:
+      return durum
+  }
 }
 
 export function OnBasvurularClientPage() {
@@ -123,6 +142,7 @@ export function OnBasvurularClientPage() {
   const fetchBasvurular = async () => {
     try {
       setLoading(true)
+      const supabase = createClient()
 
       // Toplam sayıyı al
       const { count, error: countError } = await supabase
@@ -137,7 +157,7 @@ export function OnBasvurularClientPage() {
       const { data, error } = await supabase
         .from("on_basvurular")
         .select("*")
-        .order("basvuru_tarihi", { ascending: false })
+        .order("created_at", { ascending: false })
         .range((currentPage - 1) * pageSize, currentPage * pageSize - 1)
 
       if (error) throw error
@@ -175,7 +195,7 @@ export function OnBasvurularClientPage() {
 
   useEffect(() => {
     fetchBasvurular()
-  }, [currentPage, pageSize, toast])
+  }, [currentPage, pageSize])
 
   // Filtreleme işlemi
   useEffect(() => {
@@ -189,8 +209,8 @@ export function OnBasvurularClientPage() {
           basvuru.yetkili_adi.toLowerCase().includes(searchTerm.toLowerCase()) ||
           basvuru.yetkili_soyadi.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (basvuru.yetkili_email && basvuru.yetkili_email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (basvuru.isletme_telefonu && basvuru.isletme_telefonu.includes(searchTerm)) ||
-          (basvuru.yetkili_telefonu && basvuru.yetkili_telefonu.includes(searchTerm)),
+          (basvuru.telefon && basvuru.telefon.includes(searchTerm)) ||
+          (basvuru.yetkili_telefon && basvuru.yetkili_telefon.includes(searchTerm)),
       )
     }
 
@@ -206,6 +226,8 @@ export function OnBasvurularClientPage() {
   const updateBasvuruDurum = async (id: string, durum: string) => {
     try {
       setIsUpdating(true)
+      const supabase = createClient()
+
       const { error } = await supabase
         .from("on_basvurular")
         .update({
@@ -244,6 +266,45 @@ export function OnBasvurularClientPage() {
     }
   }
 
+  // Ödeme durumunu güncelle
+  const updateOdemeDurum = async (id: string, odeme_durumu: string) => {
+    try {
+      setIsUpdating(true)
+      const supabase = createClient()
+
+      const { error } = await supabase
+        .from("on_basvurular")
+        .update({
+          odeme_durumu,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+
+      if (error) throw error
+
+      // Başvuruları güncelle
+      setBasvurular((prev) =>
+        prev.map((basvuru) =>
+          basvuru.id === id ? { ...basvuru, odeme_durumu, updated_at: new Date().toISOString() } : basvuru,
+        ),
+      )
+
+      toast({
+        title: "Başarılı",
+        description: "Ödeme durumu güncellendi.",
+      })
+    } catch (error) {
+      console.error("Ödeme durumu güncellenirken hata oluştu:", error)
+      toast({
+        title: "Hata",
+        description: "Ödeme durumu güncellenirken bir sorun oluştu.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   // Başvuru detaylarını göster
   const showBasvuruDetails = (basvuru: Basvuru) => {
     setSelectedBasvuru(basvuru)
@@ -251,8 +312,8 @@ export function OnBasvurularClientPage() {
     setIsDialogOpen(true)
   }
 
-  // Yeni başvuru sayısı
-  const yeniBasvuruSayisi = basvurular.filter((b) => b.durum === "yeni").length
+  // Bekleyen başvuru sayısı
+  const bekleyenBasvuruSayisi = basvurular.filter((b) => b.durum === "beklemede").length
 
   return (
     <>
@@ -266,8 +327,8 @@ export function OnBasvurularClientPage() {
                   İşletme yönetim sistemine yapılan ön başvuruları görüntüleyin ve yönetin.
                 </CardDescription>
               </div>
-              {yeniBasvuruSayisi > 0 && (
-                <Badge className="bg-blue-500 self-start">{yeniBasvuruSayisi} Yeni Başvuru</Badge>
+              {bekleyenBasvuruSayisi > 0 && (
+                <Badge className="bg-blue-500 self-start">{bekleyenBasvuruSayisi} Bekleyen Başvuru</Badge>
               )}
             </div>
           </CardHeader>
@@ -290,7 +351,7 @@ export function OnBasvurularClientPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tüm Başvurular</SelectItem>
-                    <SelectItem value="yeni">Yeni</SelectItem>
+                    <SelectItem value="beklemede">Beklemede</SelectItem>
                     <SelectItem value="inceleniyor">İnceleniyor</SelectItem>
                     <SelectItem value="onaylandi">Onaylandı</SelectItem>
                     <SelectItem value="reddedildi">Reddedildi</SelectItem>
@@ -332,6 +393,7 @@ export function OnBasvurularClientPage() {
                       <TableHead>Yetkili</TableHead>
                       <TableHead>Tarih</TableHead>
                       <TableHead>Durum</TableHead>
+                      <TableHead>Ödeme</TableHead>
                       <TableHead className="text-right">İşlemler</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -344,22 +406,27 @@ export function OnBasvurularClientPage() {
                             <span className="text-xs text-gray-500">{basvuru.kategori}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{getPaketAdi(basvuru.paket_turu || "")}</TableCell>
+                        <TableCell>{basvuru.paket_adi}</TableCell>
                         <TableCell>
                           <div className="flex flex-col">
                             <span>{`${basvuru.yetkili_adi} ${basvuru.yetkili_soyadi}`}</span>
-                            <span className="text-xs text-gray-500">{basvuru.yetkili_telefonu}</span>
+                            <span className="text-xs text-gray-500">{basvuru.yetkili_telefon}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          {basvuru.basvuru_tarihi
-                            ? format(new Date(basvuru.basvuru_tarihi), "dd MMM yyyy HH:mm", {
+                          {basvuru.created_at
+                            ? format(new Date(basvuru.created_at), "dd MMM yyyy HH:mm", {
                                 locale: tr,
                               })
                             : "-"}
                         </TableCell>
                         <TableCell>
                           <Badge className={getDurumBadgeColor(basvuru.durum)}>{getDurumAdi(basvuru.durum)}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getOdemeDurumBadgeColor(basvuru.odeme_durumu)}>
+                            {getOdemeDurumAdi(basvuru.odeme_durumu)}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -377,6 +444,7 @@ export function OnBasvurularClientPage() {
                                 Detayları Görüntüle
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              <DropdownMenuLabel>Durum Güncelle</DropdownMenuLabel>
                               <DropdownMenuItem
                                 onClick={() => {
                                   setSelectedBasvuru(basvuru)
@@ -406,6 +474,32 @@ export function OnBasvurularClientPage() {
                               >
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Reddet
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuLabel>Ödeme Durumu</DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  updateOdemeDurum(basvuru.id, "odendi")
+                                }}
+                              >
+                                <DollarSign className="mr-2 h-4 w-4" />
+                                Ödendi Olarak İşaretle
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  updateOdemeDurum(basvuru.id, "beklemede")
+                                }}
+                              >
+                                <AlertCircle className="mr-2 h-4 w-4" />
+                                Beklemede Olarak İşaretle
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  updateOdemeDurum(basvuru.id, "iptal")
+                                }}
+                              >
+                                <XCircle className="mr-2 h-4 w-4" />
+                                İptal Olarak İşaretle
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -489,27 +583,27 @@ export function OnBasvurularClientPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Kategori</h4>
-                    <p>{selectedBasvuru.kategori}</p>
+                    <p>{selectedBasvuru.kategori || "-"}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Telefon</h4>
-                    <p>{selectedBasvuru.isletme_telefonu}</p>
+                    <p>{selectedBasvuru.telefon}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">E-posta</h4>
+                    <p>{selectedBasvuru.email}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Web Sitesi</h4>
                     <p>{selectedBasvuru.website || "-"}</p>
                   </div>
-                  <div className="col-span-1 md:col-span-2">
-                    <h4 className="text-sm font-medium text-gray-500">Adres</h4>
-                    <p>{selectedBasvuru.isletme_adresi}</p>
-                  </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Şehir</h4>
                     <p>{selectedBasvuru.sehir}</p>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">İlçe</h4>
-                    <p>{selectedBasvuru.ilce || "-"}</p>
+                  <div className="col-span-1 md:col-span-2">
+                    <h4 className="text-sm font-medium text-gray-500">Adres</h4>
+                    <p>{selectedBasvuru.adres || "-"}</p>
                   </div>
                 </div>
               </div>
@@ -527,11 +621,11 @@ export function OnBasvurularClientPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Telefon</h4>
-                    <p>{selectedBasvuru.yetkili_telefonu}</p>
+                    <p>{selectedBasvuru.yetkili_telefon}</p>
                   </div>
                   <div className="col-span-1 md:col-span-2">
                     <h4 className="text-sm font-medium text-gray-500">E-posta</h4>
-                    <p>{selectedBasvuru.yetkili_email || "-"}</p>
+                    <p>{selectedBasvuru.yetkili_email}</p>
                   </div>
                 </div>
               </div>
@@ -544,8 +638,12 @@ export function OnBasvurularClientPage() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500">Seçilen Paket</h4>
-                    <p className="font-medium">{getPaketAdi(selectedBasvuru.paket_turu || "")}</p>
+                    <h4 className="text-sm font-medium text-gray-500">Paket Türü</h4>
+                    <p className="font-medium">{selectedBasvuru.paket_turu}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Paket Adı</h4>
+                    <p>{selectedBasvuru.paket_adi}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500">Durum</h4>
@@ -554,10 +652,16 @@ export function OnBasvurularClientPage() {
                     </Badge>
                   </div>
                   <div>
+                    <h4 className="text-sm font-medium text-gray-500">Ödeme Durumu</h4>
+                    <Badge className={getOdemeDurumBadgeColor(selectedBasvuru.odeme_durumu)}>
+                      {getOdemeDurumAdi(selectedBasvuru.odeme_durumu)}
+                    </Badge>
+                  </div>
+                  <div>
                     <h4 className="text-sm font-medium text-gray-500">Başvuru Tarihi</h4>
                     <p>
-                      {selectedBasvuru.basvuru_tarihi
-                        ? format(new Date(selectedBasvuru.basvuru_tarihi), "dd MMMM yyyy HH:mm", {
+                      {selectedBasvuru.created_at
+                        ? format(new Date(selectedBasvuru.created_at), "dd MMMM yyyy HH:mm", {
                             locale: tr,
                           })
                         : "-"}
@@ -576,19 +680,6 @@ export function OnBasvurularClientPage() {
                 </div>
               </div>
 
-              {/* Ek Bilgiler */}
-              {selectedBasvuru.aciklama && (
-                <div>
-                  <h3 className="text-lg font-medium mb-3 flex items-center">
-                    <AlertCircle className="mr-2 h-5 w-5 text-amber-500" />
-                    Ek Bilgiler
-                  </h3>
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <p>{selectedBasvuru.aciklama}</p>
-                  </div>
-                </div>
-              )}
-
               {/* Notlar ve İşlemler */}
               <div>
                 <h3 className="text-lg font-medium mb-3">Notlar ve İşlemler</h3>
@@ -597,14 +688,14 @@ export function OnBasvurularClientPage() {
                     <label htmlFor="notlar" className="block text-sm font-medium text-gray-700 mb-1">
                       Notlar
                     </label>
-                    <textarea
+                    <Textarea
                       id="notlar"
                       rows={3}
-                      className="w-full border border-gray-300 rounded-md p-2"
+                      className="w-full"
                       placeholder="Başvuru ile ilgili notlarınızı buraya ekleyebilirsiniz..."
                       value={notlar}
                       onChange={(e) => setNotlar(e.target.value)}
-                    ></textarea>
+                    />
                   </div>
 
                   <div className="flex flex-wrap gap-2 justify-end">

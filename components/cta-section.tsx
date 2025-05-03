@@ -37,35 +37,35 @@ export function CTASection() {
             </p>
           </div>
 
-          <Tabs defaultValue="single" className="w-full max-w-md mx-auto">
+          <Tabs defaultValue="yillik-klasik" className="w-full max-w-md mx-auto">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="single">Tek Seferlik</TabsTrigger>
-              <TabsTrigger value="monthly">Aylık Abonelik</TabsTrigger>
+              <TabsTrigger value="yillik-klasik">Yıllık Klasik</TabsTrigger>
+              <TabsTrigger value="yillik-premium">Yıllık Premium</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="single">
+            <TabsContent value="yillik-klasik">
               <div className="text-center mb-6">
                 <p className="font-medium text-lg">2.000₺ + KDV</p>
-                <p className="text-sm text-gray-500">Tek seferlik ödeme, tek işletme için</p>
+                <p className="text-sm text-gray-500">Yıllık ödeme, tek işletme için</p>
               </div>
               <Button
                 size="lg"
                 className="w-full bg-primary hover:bg-primary/90"
-                onClick={() => handleBasvuruClick("tek-seferlik")}
+                onClick={() => handleBasvuruClick("yillik-klasik")}
               >
                 Hemen Başvurun <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </TabsContent>
 
-            <TabsContent value="monthly">
+            <TabsContent value="yillik-premium">
               <div className="text-center mb-6">
-                <p className="font-medium text-lg">Aylık 1.000₺ + KDV</p>
-                <p className="text-sm text-gray-500">Sürekli destek ve yapay zeka optimizasyonu</p>
+                <p className="font-medium text-lg">3.500₺ + KDV</p>
+                <p className="text-sm text-gray-500">Yıllık ödeme, premium özellikler</p>
               </div>
               <Button
                 size="lg"
                 className="w-full bg-primary hover:bg-primary/90"
-                onClick={() => handleBasvuruClick("aylik")}
+                onClick={() => handleBasvuruClick("yillik-premium")}
               >
                 Planları İnceleyin <ArrowRight className="ml-2 h-5 w-5" />
               </Button>

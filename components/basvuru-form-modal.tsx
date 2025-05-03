@@ -1,5 +1,7 @@
+"use client"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { BasvuruForm } from "./basvuru-form"
+import { BasvuruForm } from "@/components/basvuru-form"
 
 interface BasvuruFormModalProps {
   open: boolean
@@ -20,13 +22,11 @@ export function BasvuruFormModal({ open, onOpenChange, paketTipi = "" }: Basvuru
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {paketTipi === "tek-seferlik"
-              ? "Tek Seferlik Paket Başvurusu"
-              : paketTipi === "aylik"
-                ? "Aylık Abonelik Başvurusu"
-                : paketTipi === "yillik"
-                  ? "Yıllık Abonelik Başvurusu"
-                  : "Hizmet Başvuru Formu"}
+            {paketTipi === "yillik-klasik"
+              ? "Yıllık Klasik Paket Başvurusu"
+              : paketTipi === "yillik-premium"
+                ? "Yıllık Premium Paket Başvurusu"
+                : "Hizmet Başvuru Formu"}
           </DialogTitle>
         </DialogHeader>
         <BasvuruForm paketTipi={paketTipi} onSuccess={handleSuccess} onCancel={() => onOpenChange(false)} />

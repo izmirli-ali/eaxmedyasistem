@@ -11,7 +11,7 @@ import { tr } from "date-fns/locale"
 import Link from "next/link"
 
 // Bildirim tipi
-type NotificationType = "info" | "warning" | "success" | "error"
+type NotificationType = "info" | "warning" | "success" | "error" | "system" | "business_added"
 
 // Bildirim arayüzü
 interface Notification {
@@ -23,6 +23,7 @@ interface Notification {
   is_read: boolean
   related_to?: string
   related_id?: string
+  related_type?: string
   created_at: string
 }
 
@@ -121,9 +122,29 @@ export function NotificationCenter() {
         return "bg-green-50 border-green-200"
       case "error":
         return "bg-red-50 border-red-200"
+      case "system":
+        return "bg-purple-50 border-purple-200"
+      case "business_added":
+        return "bg-emerald-50 border-emerald-200"
       default:
         return "bg-gray-50 border-gray-200"
     }
+  }
+
+  // Bildirim tipine göre yönlendirme URL'i
+  const getNotificationUrl = (notification: Notification) => {
+    if (notification.related_type === "on_basvuru") {
+      return "/admin/on-basvurular"
+    } else if (notification.related_type === "isletme") {
+      return `/admin/isletme-duzenle/${notification.related_id}`
+    } else if (notification.related_to === "isletme") {
+      return `/admin/isletme/${notification.related_id}`
+    } else if (notification.related_to === "musteri") {
+      return `/admin/musteri-yonetimi?id=${notification.related_id}`
+    } else if (notification.related_to === "gorev") {
+      return `/admin/gorevler?id=${notification.related_id}`
+    }
+    return "/admin/bildirimler"
   }
 
   return (
@@ -167,7 +188,12 @@ export function NotificationCenter() {
                 </div>
                 <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
                 {!notification.is_read && (
-                  <div className="mt-2 text-right">
+                  <div className="mt-2 flex justify-between">
+                    <Link href={getNotificationUrl(notification)}>
+                      <Button variant="ghost" size="sm">
+                        Görüntüle
+                      </Button>
+                    </Link>
                     <Button variant="ghost" size="sm" onClick={() => markAsRead(notification.id)}>
                       Okundu İşaretle
                     </Button>

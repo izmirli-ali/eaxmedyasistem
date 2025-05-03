@@ -8,13 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, CheckCircle, RefreshCw, AlertCircle } from "lucide-react"
+import { Loader2, CheckCircle, RefreshCw, AlertCircle, Eye } from "lucide-react"
 import { format } from "date-fns"
 import { tr } from "date-fns/locale"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import Link from "next/link"
 
 // Bildirim tipi
-type NotificationType = "info" | "warning" | "success" | "error"
+type NotificationType = "info" | "warning" | "success" | "error" | "system" | "business_added"
 
 // Bildirim arayüzü
 interface Notification {
@@ -26,6 +27,7 @@ interface Notification {
   is_read: boolean
   related_to?: string
   related_id?: string
+  related_type?: string
   created_at: string
 }
 
@@ -78,6 +80,26 @@ export default function BildirimlerPage() {
   // Sayfa yüklendiğinde bildirimleri getir
   useEffect(() => {
     loadNotifications()
+
+    // Gerçek zamanlı bildirim güncellemeleri için abonelik
+    const channel = supabase
+      .channel("notification_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          loadNotifications()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   // Bildirimi okundu olarak işaretle
@@ -155,28 +177,29 @@ export default function BildirimlerPage() {
         return <Badge className="bg-green-100 text-green-800">Başarılı</Badge>
       case "error":
         return <Badge className="bg-red-100 text-red-800">Hata</Badge>
+      case "system":
+        return <Badge className="bg-purple-100 text-purple-800">Sistem</Badge>
+      case "business_added":
+        return <Badge className="bg-emerald-100 text-emerald-800">Yeni İşletme</Badge>
       default:
         return <Badge className="bg-gray-100 text-gray-800">{type}</Badge>
     }
   }
 
-  // İlgili sayfaya yönlendirme
-  const navigateToRelated = (notification: Notification) => {
-    if (!notification.related_to || !notification.related_id) return
-
-    switch (notification.related_to) {
-      case "isletme":
-        window.location.href = `/admin/isletme/${notification.related_id}`
-        break
-      case "musteri":
-        window.location.href = `/admin/musteri-yonetimi?id=${notification.related_id}`
-        break
-      case "gorev":
-        window.location.href = `/admin/gorevler?id=${notification.related_id}`
-        break
-      default:
-        break
+  // İlgili sayfaya yönlendirme URL'i
+  const getRelatedUrl = (notification: Notification) => {
+    if (notification.related_type === "on_basvuru") {
+      return "/admin/on-basvurular"
+    } else if (notification.related_type === "isletme") {
+      return `/admin/isletme-duzenle/${notification.related_id}`
+    } else if (notification.related_to === "isletme") {
+      return `/admin/isletme/${notification.related_id}`
+    } else if (notification.related_to === "musteri") {
+      return `/admin/musteri-yonetimi?id=${notification.related_id}`
+    } else if (notification.related_to === "gorev") {
+      return `/admin/gorevler?id=${notification.related_id}`
     }
+    return null
   }
 
   return (
@@ -215,6 +238,22 @@ export default function BildirimlerPage() {
             Okunmamış
             {notifications.filter((n) => !n.is_read).length > 0 && (
               <Badge className="ml-2 bg-red-100 text-red-800">{notifications.filter((n) => !n.is_read).length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="system">
+            Sistem
+            {notifications.filter((n) => n.type === "system").length > 0 && (
+              <Badge className="ml-2 bg-purple-100 text-purple-800">
+                {notifications.filter((n) => n.type === "system").length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="business">
+            İşletmeler
+            {notifications.filter((n) => n.type === "business_added").length > 0 && (
+              <Badge className="ml-2 bg-emerald-100 text-emerald-800">
+                {notifications.filter((n) => n.type === "business_added").length}
+              </Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -269,10 +308,13 @@ export default function BildirimlerPage() {
                                     <CheckCircle className="h-4 w-4" />
                                   </Button>
                                 )}
-                                {notification.related_to && notification.related_id && (
-                                  <Button variant="outline" size="sm" onClick={() => navigateToRelated(notification)}>
-                                    Görüntüle
-                                  </Button>
+                                {getRelatedUrl(notification) && (
+                                  <Link href={getRelatedUrl(notification) as string}>
+                                    <Button variant="outline" size="sm">
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      Görüntüle
+                                    </Button>
+                                  </Link>
                                 )}
                               </div>
                             </TableCell>
@@ -335,10 +377,13 @@ export default function BildirimlerPage() {
                                   <Button variant="outline" size="sm" onClick={() => markAsRead(notification.id)}>
                                     <CheckCircle className="h-4 w-4" />
                                   </Button>
-                                  {notification.related_to && notification.related_id && (
-                                    <Button variant="outline" size="sm" onClick={() => navigateToRelated(notification)}>
-                                      Görüntüle
-                                    </Button>
+                                  {getRelatedUrl(notification) && (
+                                    <Link href={getRelatedUrl(notification) as string}>
+                                      <Button variant="outline" size="sm">
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        Görüntüle
+                                      </Button>
+                                    </Link>
                                   )}
                                 </div>
                               </TableCell>
@@ -348,6 +393,160 @@ export default function BildirimlerPage() {
                         <TableRow>
                           <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                             Okunmamış bildirim bulunmuyor
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="system">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sistem Bildirimleri</CardTitle>
+              <CardDescription>Sistem tarafından oluşturulan bildirimleri görüntüleyin.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tarih</TableHead>
+                        <TableHead>Başlık</TableHead>
+                        <TableHead>Mesaj</TableHead>
+                        <TableHead>Durum</TableHead>
+                        <TableHead className="text-right">İşlemler</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {notifications.filter((n) => n.type === "system").length > 0 ? (
+                        notifications
+                          .filter((n) => n.type === "system")
+                          .map((notification) => (
+                            <TableRow key={notification.id} className={notification.is_read ? "" : "bg-blue-50"}>
+                              <TableCell>
+                                {format(new Date(notification.created_at), "dd MMMM yyyy HH:mm", {
+                                  locale: tr,
+                                })}
+                              </TableCell>
+                              <TableCell className="font-medium">{notification.title}</TableCell>
+                              <TableCell>{notification.message}</TableCell>
+                              <TableCell>
+                                {notification.is_read ? (
+                                  <Badge className="bg-gray-100 text-gray-800">Okundu</Badge>
+                                ) : (
+                                  <Badge className="bg-blue-100 text-blue-800">Okunmadı</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  {!notification.is_read && (
+                                    <Button variant="outline" size="sm" onClick={() => markAsRead(notification.id)}>
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {getRelatedUrl(notification) && (
+                                    <Link href={getRelatedUrl(notification) as string}>
+                                      <Button variant="outline" size="sm">
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        Görüntüle
+                                      </Button>
+                                    </Link>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                            Sistem bildirimi bulunmuyor
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="business">
+          <Card>
+            <CardHeader>
+              <CardTitle>İşletme Bildirimleri</CardTitle>
+              <CardDescription>İşletmelerle ilgili bildirimleri görüntüleyin.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tarih</TableHead>
+                        <TableHead>Başlık</TableHead>
+                        <TableHead>Mesaj</TableHead>
+                        <TableHead>Durum</TableHead>
+                        <TableHead className="text-right">İşlemler</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {notifications.filter((n) => n.type === "business_added").length > 0 ? (
+                        notifications
+                          .filter((n) => n.type === "business_added")
+                          .map((notification) => (
+                            <TableRow key={notification.id} className={notification.is_read ? "" : "bg-blue-50"}>
+                              <TableCell>
+                                {format(new Date(notification.created_at), "dd MMMM yyyy HH:mm", {
+                                  locale: tr,
+                                })}
+                              </TableCell>
+                              <TableCell className="font-medium">{notification.title}</TableCell>
+                              <TableCell>{notification.message}</TableCell>
+                              <TableCell>
+                                {notification.is_read ? (
+                                  <Badge className="bg-gray-100 text-gray-800">Okundu</Badge>
+                                ) : (
+                                  <Badge className="bg-blue-100 text-blue-800">Okunmadı</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  {!notification.is_read && (
+                                    <Button variant="outline" size="sm" onClick={() => markAsRead(notification.id)}>
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {getRelatedUrl(notification) && (
+                                    <Link href={getRelatedUrl(notification) as string}>
+                                      <Button variant="outline" size="sm">
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        Görüntüle
+                                      </Button>
+                                    </Link>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                            İşletme bildirimi bulunmuyor
                           </TableCell>
                         </TableRow>
                       )}

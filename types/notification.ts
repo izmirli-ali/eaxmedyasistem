@@ -7,6 +7,10 @@ export type NotificationType =
   | "backup_completed" // Yedekleme tamamlandı
   | "customer_added" // Yeni müşteri eklendi
   | "business_added" // Yeni işletme eklendi
+  | "info" // Bilgi
+  | "warning" // Uyarı
+  | "success" // Başarılı
+  | "error" // Hata
 
 export interface Notification {
   id: string
