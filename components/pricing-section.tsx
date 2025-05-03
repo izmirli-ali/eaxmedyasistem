@@ -8,44 +8,44 @@ import { CheckCircle, X } from "lucide-react"
 // Fiyatlandırma paketleri
 const pricingPlans = [
   {
-    id: "yillik",
-    name: "Yıllık Paket",
+    id: "yillik-klasik",
+    name: "Yıllık Klasik Paket",
     price: "₺2,000",
     period: "yıllık",
     description: "Tek seferlik SEO optimizasyonu ile işletmenizi üst sıralara taşıyın",
     features: [
-      { text: "Google Haritalar kaydı ve optimizasyonu", available: true },
-      { text: "İlk başvuruda 1 kere SEO optimizasyonu", available: true },
-      { text: "İşletme bilgilerinin düzenlenmesi", available: true },
-      { text: "Google İşletme Profili tam optimizasyonu", available: true },
-      { text: "Anahtar kelime araştırması", available: true },
-      { text: "Rakip analizi", available: true },
-      { text: "Haftalık SEO güncellemeleri", available: false },
-      { text: "Aylık performans raporu", available: true },
+      { text: "1 kereye mahsus işletme ekleme", available: true },
+      { text: "Google'da indekslenme garantisi", available: true },
+      { text: "SEO optimizasyonu (tek seferlik)", available: true },
+      { text: "Harita bağlantısı, anahtar kelime tanımı, açıklama girişi", available: true },
+      { text: "Güncelleme, revize veya ek destek", available: false },
+      { text: "Anasayfa gösterimi", available: false },
+      { text: "Öne çıkan işletme etiketi", available: false },
+      { text: "İşletmeye özel paylaşım sayfası", available: true },
       { text: "E-posta ve WhatsApp desteği", available: true },
     ],
     popular: false,
     note: "* Fiyata KDV dahil değildir. Yıllık ödeme planı.",
   },
   {
-    id: "aylik",
-    name: "Aylık Paket",
-    price: "₺1,000",
-    period: "aylık",
+    id: "yillik-premium",
+    name: "Yıllık Premium Paket",
+    price: "₺3,500",
+    period: "yıllık",
     description: "Sürekli güncellenen SEO optimizasyonu ile kalıcı üst sıra",
     features: [
-      { text: "Google Haritalar kaydı ve optimizasyonu", available: true },
-      { text: "Haftalık SEO optimizasyonu güncellemeleri", available: true },
-      { text: "İşletme bilgilerinin düzenlenmesi", available: true },
-      { text: "Google İşletme Profili tam optimizasyonu", available: true },
-      { text: "Anahtar kelime araştırması", available: true },
-      { text: "Rakip analizi", available: true },
-      { text: "Haftalık içerik güncellemeleri", available: true },
+      { text: "1 kereye mahsus işletme ekleme", available: true },
+      { text: "Her ay SEO altyapısının güncellenmesi (12 kez/yıl)", available: true },
+      { text: "Gelişmiş SEO danışmanlığı ve içerik güncellemeleri", available: true },
+      { text: "Google'da özel bölgeden indeksleme (daha üst sıralar)", available: true },
+      { text: "Anasayfada gösterim", available: true },
+      { text: "Öne Çıkan İşletme etiketi", available: true },
+      { text: "İşletmeye özel paylaşım sayfası", available: true },
       { text: "Haftalık performans raporu", available: true },
       { text: "Öncelikli E-posta ve WhatsApp desteği", available: true },
     ],
     popular: true,
-    note: "* Fiyata KDV dahil değildir. Aylık ödeme planı.",
+    note: "* Fiyata KDV dahil değildir. Yıllık ödeme planı.",
   },
 ]
 
@@ -120,9 +120,6 @@ export function PricingSection() {
         <div className="mt-12 text-center">
           <p className="text-gray-500 text-sm">
             * Sonuçlar işletmenizin sektörüne ve rekabet durumuna göre değişiklik gösterebilir.
-          </p>
-          <p className="text-gray-500 text-sm mt-1">
-            * Minimum sözleşme süresi aylık paket için 3 ay, yıllık paket için 12 aydır.
           </p>
         </div>
       </div>

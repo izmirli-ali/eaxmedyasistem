@@ -1,9 +1,26 @@
 "use client"
-
-import { Button } from "@/components/ui/button"
-import { MapPin, Phone, Mail } from "lucide-react"
-import { SystemVersion } from "@/components/system-version"
+import { MapPin, Phone, Mail, X } from "lucide-react"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+
+// Modal bileşeninin içerik kısmını güncelle - daha koyu ve görünür renkler ekle
+function Modal({ isOpen, onClose, title, children }) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-3xl w-full max-h-[80vh] overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="p-6 overflow-y-auto max-h-[calc(80vh-8rem)] text-gray-900 dark:text-gray-100">{children}</div>
+      </div>
+    </div>
+  )
+}
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
@@ -57,7 +74,7 @@ export function Footer() {
               <li>
                 <button
                   onClick={() => setShowPrivacyModal(true)}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer text-left"
                 >
                   Gizlilik Politikası
                 </button>
@@ -65,7 +82,7 @@ export function Footer() {
               <li>
                 <button
                   onClick={() => setShowTermsModal(true)}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer text-left"
                 >
                   Kullanım Koşulları
                 </button>
@@ -73,7 +90,7 @@ export function Footer() {
               <li>
                 <button
                   onClick={() => setShowCookiesModal(true)}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer text-left"
                 >
                   Çerez Politikası
                 </button>
@@ -103,28 +120,25 @@ export function Footer() {
 
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center justify-center gap-2">
-              <p className="text-gray-400 text-sm">
-                &copy; {currentYear} EAX Medya - işletmenionecikar. Tüm hakları saklıdır.
-              </p>
-              <SystemVersion />
-            </div>
+            <p className="text-gray-400 text-sm">
+              &copy; {currentYear} EAX Medya - işletmenionecikar. Tüm hakları saklıdır.
+            </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <button
                 onClick={() => setShowPrivacyModal(true)}
-                className="text-gray-400 hover:text-white text-sm transition-colors"
+                className="text-gray-400 hover:text-white text-sm transition-colors cursor-pointer"
               >
                 Gizlilik Politikası
               </button>
               <button
                 onClick={() => setShowTermsModal(true)}
-                className="text-gray-400 hover:text-white text-sm transition-colors"
+                className="text-gray-400 hover:text-white text-sm transition-colors cursor-pointer"
               >
                 Kullanım Koşulları
               </button>
               <button
                 onClick={() => setShowCookiesModal(true)}
-                className="text-gray-400 hover:text-white text-sm transition-colors"
+                className="text-gray-400 hover:text-white text-sm transition-colors cursor-pointer"
               >
                 Çerez Politikası
               </button>
@@ -133,296 +147,218 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Politika Modalları */}
-      {showPrivacyModal && <PrivacyPolicyModal onClose={() => setShowPrivacyModal(false)} />}
-      {showTermsModal && <TermsOfServiceModal onClose={() => setShowTermsModal(false)} />}
-      {showCookiesModal && <CookiePolicyModal onClose={() => setShowCookiesModal(false)} />}
-    </footer>
-  )
-}
+      {/* Modallar */}
 
-// Gizlilik Politikası Modalı
-function PrivacyPolicyModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800">Gizlilik Politikası</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
-        <div className="p-6">
-          <p className="mb-4 text-gray-800">
-            İşletmeni Öne Çıkar platformu olarak, hizmetlerimizi sunmak ve geliştirmek amacıyla aşağıdaki bilgileri
-            toplayabiliriz:
+      <Modal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} title="Gizlilik Politikası">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Son güncelleme: {new Date().toLocaleDateString("tr-TR")}
           </p>
-          <ul className="list-disc pl-6 mb-4 space-y-2 text-gray-800">
-            <li>
-              Ad, soyad, e-posta adresi, telefon numarası gibi kişisel bilgiler: Bu bilgileri, sizinle iletişim kurmak,
-              hesabınızı yönetmek, size kişiselleştirilmiş hizmetler sunmak, kampanyalarımız hakkında sizi
-              bilgilendirmek ve yasal yükümlülüklerimizi yerine getirmek için kullanırız.
-            </li>
-            <li>
-              İşletme adı, adresi, telefon numarası, web sitesi gibi işletme bilgileri: Bu bilgileri, işletmenizi Google
-              Haritalar'da optimize etmek, size özel SEO stratejileri oluşturmak, işletmenizin performansını analiz
-              etmek ve size daha iyi hizmet sunmak için kullanırız.
-            </li>
-            <li>
-              IP adresi, tarayıcı türü, ziyaret edilen sayfalar gibi kullanım verileri: Bu bilgileri, platformumuzun
-              performansını analiz etmek, hataları gidermek, kullanıcı deneyimini iyileştirmek, güvenliği sağlamak ve
-              dolandırıcılığı önlemek için kullanırız.
-            </li>
-            <li>
-              Çerezler ve benzer teknolojiler aracılığıyla toplanan bilgiler: Bu bilgileri, tercihlerinizi hatırlamak,
-              size kişiselleştirilmiş içerik sunmak, reklamları hedeflemek, platformumuzu analiz etmek ve size daha iyi
-              bir deneyim sunmak için kullanırız.
-            </li>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">1. Giriş</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            EAX Medya olarak kişisel verilerinizin güvenliği konusunda büyük hassasiyet gösteriyoruz. Bu Gizlilik
+            Politikası, işletmenionecikar.com platformunu kullanırken toplanan, işlenen ve saklanan kişisel
+            verilerinizle ilgili uygulamalarımızı açıklamaktadır.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">2. Toplanan Veriler</h4>
+          <p className="text-gray-800 dark:text-gray-200">Platformumuzda aşağıdaki kişisel verileri toplayabiliriz:</p>
+          <ul className="list-disc pl-5 space-y-1 text-gray-800 dark:text-gray-200">
+            <li>İsim, e-posta adresi, telefon numarası gibi iletişim bilgileri</li>
+            <li>İşletme adı, adresi, çalışma saatleri gibi işletme bilgileri</li>
+            <li>Kullanıcı hesabı oluşturulurken sağlanan bilgiler</li>
+            <li>Platform kullanımınızla ilgili log verileri ve çerezler</li>
+            <li>İşletmenizle ilgili yüklediğiniz fotoğraflar ve diğer medya içerikleri</li>
           </ul>
 
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">2. Bilgilerin Kullanımı</h3>
-          <p className="mb-4 text-gray-800">Topladığımız bilgileri aşağıdaki amaçlarla kullanırız:</p>
-          <ul className="list-disc pl-6 mb-4 space-y-2 text-gray-800">
-            <li>Hizmetlerimizi sunmak ve yönetmek</li>
-            <li>Müşteri desteği sağlamak</li>
-            <li>Hizmetlerimizi geliştirmek ve kişiselleştirmek</li>
-            <li>Güvenlik ve dolandırıcılık önleme</li>
-            <li>Yasal yükümlülüklere uymak</li>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">3. Verilerin Kullanımı</h4>
+          <p className="text-gray-800 dark:text-gray-200">Topladığımız verileri aşağıdaki amaçlarla kullanıyoruz:</p>
+          <ul className="list-disc pl-5 space-y-1 text-gray-800 dark:text-gray-200">
+            <li>İşletmenizi Google Haritalar ve diğer platformlarda optimize etmek</li>
+            <li>Size daha iyi hizmet sunmak ve platformumuzu geliştirmek</li>
+            <li>Talep ettiğiniz hizmetleri sağlamak</li>
+            <li>Sizinle iletişim kurmak ve destek sağlamak</li>
+            <li>Yasal yükümlülüklerimizi yerine getirmek</li>
           </ul>
 
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">3. Bilgi Paylaşımı</h3>
-          <p className="mb-4 text-gray-800">Bilgilerinizi aşağıdaki durumlar dışında üçüncü taraflarla paylaşmayız:</p>
-          <ul className="list-disc pl-6 mb-4 space-y-2 text-gray-800">
-            <li>Açık izniniz olduğunda</li>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">4. Veri Güvenliği</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Kişisel verilerinizi korumak için endüstri standardı güvenlik önlemleri uyguluyoruz. Verileriniz şifreleme,
+            güvenli sunucular ve düzenli güvenlik denetimleri ile korunmaktadır.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">5. Veri Paylaşımı</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Kişisel verilerinizi aşağıdaki durumlar dışında üçüncü taraflarla paylaşmıyoruz:
+          </p>
+          <ul className="list-disc pl-5 space-y-1 text-gray-800 dark:text-gray-200">
+            <li>Açık rızanız olduğunda</li>
             <li>Hizmet sağlayıcılarımızla (örn. hosting, ödeme işlemcileri)</li>
-            <li>Yasal zorunluluk durumunda (mahkeme kararı vb.)</li>
-            <li>Şirket birleşmesi veya satın alınması durumunda</li>
+            <li>Yasal zorunluluk durumunda</li>
           </ul>
 
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">4. Veri Güvenliği</h3>
-          <p className="mb-4 text-gray-800">
-            Bilgilerinizi korumak için endüstri standardı güvenlik önlemleri uyguluyoruz. Ancak, internet üzerinden
-            hiçbir veri iletiminin %100 güvenli olmadığını unutmayın.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">5. Veri Saklama</h3>
-          <p className="mb-4 text-gray-800">
-            Kişisel verilerinizi hizmetlerimizi sunmak için gerekli olduğu sürece veya yasal yükümlülüklerimizi yerine
-            getirmek için saklarız.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">6. Haklarınız</h3>
-          <p className="mb-4 text-gray-800">KVKK kapsamında aşağıdaki haklara sahipsiniz:</p>
-          <ul className="list-disc pl-6 mb-4 space-y-2 text-gray-800">
-            <li>Verilerinize erişim ve düzeltme hakkı</li>
-            <li>Verilerinizin silinmesini talep etme hakkı</li>
-            <li>Veri işlemeye itiraz etme hakkı</li>
-            <li>Veri taşınabilirliği hakkı</li>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">6. Haklarınız</h4>
+          <p className="text-gray-800 dark:text-gray-200">KVKK kapsamında aşağıdaki haklara sahipsiniz:</p>
+          <ul className="list-disc pl-5 space-y-1 text-gray-800 dark:text-gray-200">
+            <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
+            <li>Kişisel verileriniz işlenmişse buna ilişkin bilgi talep etme</li>
+            <li>Kişisel verilerinizin işlenme amacını ve bunların amacına uygun kullanılıp kullanılmadığını öğrenme</li>
+            <li>Yurt içinde veya yurt dışında kişisel verilerinizin aktarıldığı üçüncü kişileri bilme</li>
+            <li>Kişisel verilerinizin eksik veya yanlış işlenmiş olması hâlinde bunların düzeltilmesini isteme</li>
+            <li>Kişisel verilerinizin silinmesini veya yok edilmesini isteme</li>
           </ul>
 
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">7. İletişim</h3>
-          <p className="mb-4 text-gray-800">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">7. İletişim</h4>
+          <p className="text-gray-800 dark:text-gray-200">
             Gizlilik politikamızla ilgili sorularınız için eaxmedya@gmail.com adresinden bizimle iletişime
             geçebilirsiniz.
           </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">8. Değişiklikler</h3>
-          <p className="text-gray-800">
-            Bu gizlilik politikasını zaman zaman güncelleyebiliriz. Önemli değişiklikler olması durumunda sizi
-            bilgilendireceğiz.
-          </p>
-          <p className="mt-4 text-sm text-gray-500">Son güncelleme: Nisan 2024</p>
         </div>
-        <div className="border-t p-4 flex justify-end">
-          <Button onClick={onClose}>Kapat</Button>
+      </Modal>
+
+      <Modal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} title="Kullanım Koşulları">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Son güncelleme: {new Date().toLocaleDateString("tr-TR")}
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">1. Kabul Edilen Şartlar</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            İşletmenionecikar.com web sitesini veya mobil uygulamasını kullanarak, bu Kullanım Koşulları'nı kabul etmiş
+            sayılırsınız. Bu koşulları kabul etmiyorsanız, lütfen platformumuzu kullanmayınız.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">2. Hizmet Tanımı</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            EAX Medya, işletmelerin Google Haritalar ve diğer dijital platformlarda daha iyi görünürlük kazanmasına
+            yardımcı olan bir hizmet sunmaktadır. Platformumuz, işletme bilgilerinin yönetimi, optimizasyonu ve tanıtımı
+            için çeşitli araçlar sağlar.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">3. Kullanıcı Hesapları</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Platformumuzun bazı özelliklerini kullanabilmek için bir hesap oluşturmanız gerekebilir. Hesap
+            bilgilerinizin gizliliğini korumak ve hesabınızla gerçekleştirilen tüm etkinliklerden sorumlu olmak sizin
+            sorumluluğunuzdadır.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">4. Kullanıcı İçeriği</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Platformumuza yüklediğiniz tüm içeriklerden (fotoğraflar, metinler, videolar vb.) siz sorumlusunuz. Bu
+            içeriklerin yasal olduğunu ve üçüncü tarafların haklarını ihlal etmediğini garanti etmelisiniz.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">5. Yasaklanan Kullanımlar</h4>
+          <p className="text-gray-800 dark:text-gray-200">Platformumuzda aşağıdaki faaliyetler kesinlikle yasaktır:</p>
+          <ul className="list-disc pl-5 space-y-1 text-gray-800 dark:text-gray-200">
+            <li>Yasadışı, zararlı, tehditkar, taciz edici, iftira niteliğinde içerik paylaşmak</li>
+            <li>Başkalarının fikri mülkiyet haklarını ihlal eden içerik paylaşmak</li>
+            <li>Platformun normal işleyişini bozan veya aşırı yük bindiren faaliyetlerde bulunmak</li>
+            <li>Platformun güvenlik önlemlerini atlatmaya çalışmak</li>
+            <li>Diğer kullanıcıların kişisel bilgilerini toplamak veya saklamak</li>
+          </ul>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">6. Fikri Mülkiyet Hakları</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Platform ve içeriğindeki tüm fikri mülkiyet hakları EAX Medya'ya aittir. Kullanıcılar, platformda
+            paylaştıkları içeriklerin kullanım, çoğaltma ve dağıtım haklarını EAX Medya'ya vermiş sayılırlar.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">7. Sorumluluk Reddi</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Platformumuz "olduğu gibi" sunulmaktadır. EAX Medya, platformun kesintisiz veya hatasız çalışacağını garanti
+            etmez. Platformun kullanımından doğabilecek herhangi bir zarardan sorumlu değiliz.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">8. Değişiklikler</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Bu Kullanım Koşulları'nı herhangi bir zamanda değiştirme hakkını saklı tutarız. Değişiklikler, platformda
+            yayınlandıktan sonra geçerli olacaktır.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">9. İletişim</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Kullanım Koşulları ile ilgili sorularınız için eaxmedya@gmail.com adresinden bizimle iletişime
+            geçebilirsiniz.
+          </p>
         </div>
-      </div>
-    </div>
-  )
-}
+      </Modal>
 
-// Kullanım Koşulları Modalı
-function TermsOfServiceModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gray-100 p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800">Kullanım Koşulları</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
+      <Modal isOpen={showCookiesModal} onClose={() => setShowCookiesModal(false)} title="Çerez Politikası">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Son güncelleme: {new Date().toLocaleDateString("tr-TR")}
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">1. Çerezler Nedir?</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Çerezler (cookies), web siteleri tarafından bilgisayarınıza, telefonunuza veya tabletinize yerleştirilen
+            küçük metin dosyalarıdır. Bu dosyalar, web sitesinin ziyaretinizle ilgili bilgileri saklar ve sonraki
+            ziyaretlerinizde size daha iyi bir deneyim sunmak için kullanılır.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">2. Kullandığımız Çerez Türleri</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            İşletmenionecikar.com platformunda aşağıdaki çerez türlerini kullanıyoruz:
+          </p>
+          <ul className="list-disc pl-5 space-y-1 text-gray-800 dark:text-gray-200">
+            <li>
+              <strong className="text-gray-900 dark:text-white">Zorunlu Çerezler:</strong> Platformun temel işlevlerini
+              yerine getirmek için gerekli olan çerezlerdir.
+            </li>
+            <li>
+              <strong className="text-gray-900 dark:text-white">Performans Çerezleri:</strong> Platformun performansını
+              ölçmek ve iyileştirmek için kullanılan çerezlerdir.
+            </li>
+            <li>
+              <strong className="text-gray-900 dark:text-white">İşlevsellik Çerezleri:</strong> Size daha gelişmiş ve
+              kişiselleştirilmiş bir deneyim sunmak için kullanılan çerezlerdir.
+            </li>
+            <li>
+              <strong className="text-gray-900 dark:text-white">Hedefleme/Reklam Çerezleri:</strong> İlgi alanlarınıza
+              göre size özel reklamlar göstermek için kullanılan çerezlerdir.
+            </li>
+          </ul>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">3. Çerezlerin Kullanım Amaçları</h4>
+          <p className="text-gray-800 dark:text-gray-200">Çerezleri aşağıdaki amaçlarla kullanıyoruz:</p>
+          <ul className="list-disc pl-5 space-y-1 text-gray-800 dark:text-gray-200">
+            <li>Platformumuzun düzgün çalışmasını sağlamak</li>
+            <li>Kullanıcı deneyimini iyileştirmek ve kişiselleştirmek</li>
+            <li>Platform kullanımı hakkında istatistiksel veriler toplamak</li>
+            <li>Güvenlik önlemlerini güçlendirmek</li>
+            <li>İlgi alanlarınıza göre size özel içerik ve reklamlar sunmak</li>
+          </ul>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">4. Çerez Yönetimi</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Çoğu web tarayıcısı, çerezleri otomatik olarak kabul edecek şekilde ayarlanmıştır. Ancak, tarayıcı
+            ayarlarınızı değiştirerek çerezleri reddedebilir veya çerez kullanıldığında uyarı verecek şekilde
+            ayarlayabilirsiniz.
+          </p>
+          <p className="text-gray-800 dark:text-gray-200">
+            Çerezleri devre dışı bırakmak, platformumuzun bazı özelliklerinin düzgün çalışmamasına neden olabilir.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">5. Üçüncü Taraf Çerezleri</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Platformumuzda, Google Analytics, Facebook Pixel gibi üçüncü taraf hizmetlerin çerezleri de kullanılabilir.
+            Bu çerezler, ilgili üçüncü tarafların gizlilik politikalarına tabidir.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">6. Değişiklikler</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Bu Çerez Politikası'nı herhangi bir zamanda değiştirme hakkını saklı tutarız. Değişiklikler, platformda
+            yayınlandıktan sonra geçerli olacaktır.
+          </p>
+
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">7. İletişim</h4>
+          <p className="text-gray-800 dark:text-gray-200">
+            Çerez Politikası ile ilgili sorularınız için eaxmedya@gmail.com adresinden bizimle iletişime geçebilirsiniz.
+          </p>
         </div>
-        <div className="p-6">
-          <p className="mb-4 text-gray-800">
-            İşletmeni Öne Çıkar platformunu kullanarak aşağıdaki kullanım koşullarını kabul etmiş olursunuz. Lütfen bu
-            koşulları dikkatlice okuyun.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">1. Hizmet Tanımı</h3>
-          <p className="mb-4 text-gray-800">
-            İşletmeni Öne Çıkar, işletmelerin Google Haritalar'da daha üst sıralarda yer almasını sağlamak için SEO
-            optimizasyonu hizmetleri sunan bir platformdur. Hizmetlerimiz, işletme profillerinin optimizasyonu, anahtar
-            kelime analizi, içerik oluşturma ve performans takibi gibi çeşitli SEO stratejilerini içerir.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">2. Hesap Oluşturma ve Güvenlik</h3>
-          <p className="mb-4 text-gray-800">
-            Platformumuzu kullanmak için bir hesap oluşturmanız gerekebilir. Hesap bilgilerinizin gizliliğini korumak ve
-            yetkisiz erişimleri önlemek sizin sorumluluğunuzdadır. Hesabınızla ilgili tüm etkinliklerden siz
-            sorumlusunuz.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">3. Ödeme ve Abonelikler</h3>
-          <p className="mb-4 text-gray-800">
-            Hizmetlerimiz için ödeme yapmanız gerekebilir. Ödeme koşulları, seçtiğiniz plana göre değişiklik
-            gösterebilir. Abonelik planları, aksi belirtilmedikçe otomatik olarak yenilenir. Aboneliğinizi istediğiniz
-            zaman iptal edebilirsiniz.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">4. Kullanıcı İçeriği</h3>
-          <p className="mb-4 text-gray-800">
-            Platformumuza yüklediğiniz veya gönderdiğiniz tüm içeriklerden (işletme bilgileri, görseller, yorumlar vb.)
-            siz sorumlusunuz. Bu içeriklerin yasal olması ve üçüncü tarafların haklarını ihlal etmemesi gerekmektedir.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">5. Fikri Mülkiyet Hakları</h3>
-          <p className="mb-4 text-gray-800">
-            Platformumuz ve içeriği, fikri mülkiyet hakları ile korunmaktadır. Platformumuzu kullanmanız, size bu haklar
-            üzerinde herhangi bir sahiplik veya lisans vermez. Kullanıcı içeriğinizin fikri mülkiyet hakları size
-            aittir.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">6. Hizmet Garantisi ve Sorumluluk Reddi</h3>
-          <p className="mb-4 text-gray-800">
-            Hizmetlerimizi "olduğu gibi" sunuyoruz ve belirli sonuçlar garanti etmiyoruz. Google Haritalar sıralamaları,
-            Google'ın algoritmaları ve politikaları tarafından belirlenir ve kontrolümüz dışındadır. En iyi sonuçları
-            elde etmek için çaba göstermekle birlikte, belirli bir sıralama veya trafik artışı garanti edemeyiz.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">7. Sorumluluk Sınırlaması</h3>
-          <p className="mb-4 text-gray-800">
-            Yasaların izin verdiği ölçüde, İşletmeni Öne Çıkar ve bağlı kuruluşları, hizmetlerimizin kullanımından
-            kaynaklanan doğrudan, dolaylı, arızi, özel veya sonuç olarak ortaya çıkan zararlardan sorumlu değildir.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">8. Değişiklikler</h3>
-          <p className="mb-4 text-gray-800">
-            Bu kullanım koşullarını zaman zaman güncelleyebiliriz. Değişiklikler, web sitemizde yayınlandıktan sonra
-            geçerli olacaktır. Önemli değişiklikler olması durumunda sizi bilgilendireceğiz.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">9. Fesih</h3>
-          <p className="mb-4 text-gray-800">
-            Bu koşulları ihlal etmeniz durumunda, hesabınızı askıya alabilir veya sonlandırabiliriz. Ayrıca, istediğiniz
-            zaman hesabınızı kapatabilirsiniz.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">10. Geçerli Yasa ve Yargı Yetkisi</h3>
-          <p className="mb-4 text-gray-800">
-            Bu koşullar Türkiye Cumhuriyeti yasalarına tabidir ve bu yasalara göre yorumlanacaktır. Bu koşullardan
-            kaynaklanan herhangi bir anlaşmazlık, Türkiye Cumhuriyeti mahkemelerinin münhasır yargı yetkisine tabi
-            olacaktır.
-          </p>
-
-          <p className="mt-4 text-sm text-gray-500">Son güncelleme: Nisan 2024</p>
-        </div>
-        <div className="border-t p-4 flex justify-end">
-          <Button onClick={onClose}>Kapat</Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Çerez Politikası Modalı
-function CookiePolicyModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gray-100 p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800">Çerez Politikası</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
-        <div className="p-6">
-          <p className="mb-4 text-gray-800">
-            Bu Çerez Politikası, İşletmeni Öne Çıkar platformunda çerezleri ve benzer teknolojileri nasıl kullandığımızı
-            açıklamaktadır.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">1. Çerez Nedir?</h3>
-          <p className="mb-4 text-gray-800">
-            Çerezler, web sitelerinin bilgisayarınızda veya mobil cihazınızda depoladığı küçük metin dosyalarıdır.
-            Çerezler, web sitelerinin cihazınızı tanımasına ve oturum bilgilerinizi, tercihlerinizi ve kullanım
-            alışkanlıklarınızı hatırlamasına yardımcı olur.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">2. Kullandığımız Çerez Türleri</h3>
-          <p className="mb-4 text-gray-800">Platformumuzda aşağıdaki çerez türlerini kullanıyoruz:</p>
-
-          <h4 className="font-medium mb-2 text-gray-800">2.1 Zorunlu Çerezler</h4>
-          <p className="mb-3 text-gray-800">
-            Bu çerezler, platformumuzun temel işlevlerini yerine getirmesi için gereklidir. Bunlar olmadan, platformumuz
-            düzgün çalışmaz. Bu çerezleri devre dışı bırakamazsınız.
-          </p>
-
-          <h4 className="font-medium mb-2 text-gray-800">2.2 Performans Çerezleri</h4>
-
-          <p className="mb-3 text-gray-800">
-            Bu çerezler, ziyaretçilerin platformumuzu nasıl kullandığı hakkında bilgi toplar. Bu bilgiler,
-            platformumuzun performansını iyileştirmemize ve kullanıcı deneyimini geliştirmemize yardımcı olur.
-          </p>
-
-          <h4 className="font-medium mb-2 text-gray-800">2.3 İşlevsellik Çerezleri</h4>
-          <p className="mb-3 text-gray-800">
-            Bu çerezler, platformumuzun tercihlerinizi hatırlamasına ve size kişiselleştirilmiş bir deneyim sunmasına
-            olanak tanır.
-          </p>
-
-          <h4 className="font-medium mb-2 text-gray-800">2.4 Hedefleme/Reklam Çerezleri</h4>
-          <p className="mb-4 text-gray-800">
-            Bu çerezler, ilgi alanlarınıza göre size özel reklamlar göstermek için kullanılır. Ayrıca, bir reklamı görme
-            sayınızı sınırlamaya ve reklam kampanyalarının etkinliğini ölçmeye yardımcı olur.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">3. Üçüncü Taraf Çerezleri</h3>
-          <p className="mb-4 text-gray-800">
-            Platformumuzda, üçüncü taraf hizmet sağlayıcılarının çerezlerini de kullanabiliriz. Bu çerezler, analiz,
-            reklam ve sosyal medya entegrasyonu gibi amaçlar için kullanılır. Bu üçüncü tarafların çerez kullanımları,
-            kendi gizlilik politikalarına tabidir.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">4. Çerezleri Yönetme</h3>
-          <p className="mb-4 text-gray-800">
-            Çoğu web tarayıcısı, çerezleri kabul etmeyi veya reddetmeyi seçmenize olanak tanır. Tarayıcınızın ayarlarını
-            değiştirerek çerezleri yönetebilirsiniz. Ancak, çerezleri devre dışı bırakırsanız, platformumuzun bazı
-            özellikleri düzgün çalışmayabilir.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">5. Değişiklikler</h3>
-          <p className="mb-4 text-gray-800">
-            Bu Çerez Politikasını zaman zaman güncelleyebiliriz. Değişiklikler, web sitemizde yayınlandıktan sonra
-            geçerli olacaktır.
-          </p>
-
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">6. İletişim</h3>
-          <p className="mb-4 text-gray-800">
-            Çerez politikamızla ilgili sorularınız için eaxmedya@gmail.com adresinden bizimle iletişime geçebilirsiniz.
-          </p>
-
-          <p className="mt-4 text-sm text-gray-500">Son güncelleme: Nisan 2024</p>
-        </div>
-        <div className="border-t p-4 flex justify-end">
-          <Button onClick={onClose}>Kapat</Button>
-        </div>
-      </div>
-    </div>
+      </Modal>
+    </footer>
   )
 }
