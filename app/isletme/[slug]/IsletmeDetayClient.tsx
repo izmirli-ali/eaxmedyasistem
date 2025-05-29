@@ -66,6 +66,38 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const heroRef = useRef<HTMLDivElement>(null)
 
+  // Debug için konsola yazdır
+  useEffect(() => {
+    console.log("CLIENT COMPONENT'E GELEN İŞLETME VERİLERİ:", isletme)
+    console.log("FOTOĞRAFLAR:", isletme.fotograflar)
+    console.log("SOSYAL MEDYA:", isletme.sosyal_medya)
+    console.log("ÇALIŞMA SAATLERİ:", isletme.calisma_saatleri)
+    console.log("ÖNE ÇIKAN ÜRÜNLER:", isletme.one_cikan_urunler)
+    console.log("ÖNE ÇIKAN HİZMETLER:", isletme.one_cikan_hizmetler)
+    console.log("BOOLEAN ÖZELLİKLER:", {
+      wifi: isletme.wifi,
+      otopark: isletme.otopark,
+      kredi_karti: isletme.kredi_karti,
+      rezervasyon: isletme.rezervasyon,
+      paket_servis: isletme.paket_servis,
+      engelli_erisim: isletme.engelli_erisim,
+      bebek_dostu: isletme.bebek_dostu,
+      evcil_hayvan_dostu: isletme.evcil_hayvan_dostu,
+      sigara_alani: isletme.sigara_alani,
+      canli_muzik: isletme.canli_muzik,
+      kahvalti: isletme.kahvalti,
+      aksam_yemegi: isletme.aksam_yemegi,
+      tv: isletme.tv,
+      ucretsiz_teslimat: isletme.ucretsiz_teslimat,
+      nakit_odeme: isletme.nakit_odeme,
+      online_odeme: isletme.online_odeme,
+      temassiz_odeme: isletme.temassiz_odeme,
+      organik_urunler: isletme.organik_urunler,
+      glutensiz_secenekler: isletme.glutensiz_secenekler,
+      vegan_secenekler: isletme.vegan_secenekler,
+    })
+  }, [isletme])
+
   // Sık sorulan sorular
   const faqs = [
     {
@@ -99,31 +131,9 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
   useEffect(() => {
     setIsClient(true)
 
-    // Öne çıkan ürünleri parse et
-    if (isletme.one_cikan_urunler) {
-      try {
-        const urunler =
-          typeof isletme.one_cikan_urunler === "string"
-            ? JSON.parse(isletme.one_cikan_urunler)
-            : isletme.one_cikan_urunler
-        setOneCikanUrunler(Array.isArray(urunler) ? urunler : [])
-      } catch (error) {
-        console.error("Öne çıkan ürünler yüklenemedi:", error)
-      }
-    }
-
-    // Öne çıkan hizmetleri parse et
-    if (isletme.one_cikan_hizmetler) {
-      try {
-        const hizmetler =
-          typeof isletme.one_cikan_hizmetler === "string"
-            ? JSON.parse(isletme.one_cikan_hizmetler)
-            : isletme.one_cikan_hizmetler
-        setOneCikanHizmetler(Array.isArray(hizmetler) ? hizmetler : [])
-      } catch (error) {
-        console.error("Öne çıkan hizmetler yüklenemedi:", error)
-      }
-    }
+    // Öne çıkan ürünler ve hizmetler
+    setOneCikanUrunler(isletme.one_cikan_urunler || [])
+    setOneCikanHizmetler(isletme.one_cikan_hizmetler || [])
 
     // Slider için görselleri hazırla
     const images = []
@@ -137,30 +147,23 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
     }
 
     // Diğer fotoğrafları ekle
-    if (isletme.fotograflar) {
-      try {
-        let fotograflar = []
-        if (typeof isletme.fotograflar === "string") {
-          fotograflar = JSON.parse(isletme.fotograflar)
-        } else if (Array.isArray(isletme.fotograflar)) {
-          fotograflar = isletme.fotograflar
-        }
-
-        if (Array.isArray(fotograflar)) {
-          fotograflar.forEach((foto, index) => {
-            if (foto.url) {
-              images.push({
-                url: foto.url,
-                alt: `${isletme.isletme_adi} - Fotoğraf ${index + 1}`,
-              })
-            }
+    if (isletme.fotograflar && Array.isArray(isletme.fotograflar)) {
+      isletme.fotograflar.forEach((foto: any, index: number) => {
+        if (typeof foto === "string") {
+          images.push({
+            url: foto,
+            alt: `${isletme.isletme_adi} - Fotoğraf ${index + 1}`,
+          })
+        } else if (foto && foto.url) {
+          images.push({
+            url: foto.url,
+            alt: foto.alt || `${isletme.isletme_adi} - Fotoğraf ${index + 1}`,
           })
         }
-      } catch (error) {
-        console.error("Fotoğraflar işlenemedi:", error)
-      }
+      })
     }
 
+    console.log("SLIDER İÇİN HAZIRLANAN GÖRSELLER:", images)
     setSliderImages(images)
   }, [isletme])
 
@@ -183,11 +186,9 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
     if (!sosyalMedya) return null
 
     try {
-      // Sosyal medya verisi string ise JSON olarak parse et
-      const sosyalMedyaData = typeof sosyalMedya === "string" ? JSON.parse(sosyalMedya) : sosyalMedya
-
-      if (sosyalMedyaData?.instagram) {
-        const url = sosyalMedyaData.instagram
+      // Sosyal medya verisi artık obje olarak geliyor
+      if (sosyalMedya.instagram) {
+        const url = sosyalMedya.instagram
         // instagram.com/username formatından kullanıcı adını çıkar
         const match = url.match(/instagram\.com\/([^/?]+)/)
         return match ? match[1] : null
@@ -205,9 +206,8 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
     if (!isletme.sosyal_medya) return null
 
     try {
-      // Sosyal medya verisi string ise JSON olarak parse et
-      const sosyalMedyaData =
-        typeof isletme.sosyal_medya === "string" ? JSON.parse(isletme.sosyal_medya) : isletme.sosyal_medya
+      const sosyalMedyaData = isletme.sosyal_medya
+      console.log("RENDER SOSYAL MEDYA:", sosyalMedyaData)
 
       const platforms = Object.entries(sosyalMedyaData).filter(([_, url]) => url)
 
@@ -326,27 +326,33 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
     }
   }
 
-  // Çalışma saatlerini göster
+  // Çalışma saatleri render işlemini güncelle
   const renderCalismaSaatleri = () => {
     if (!isletme.calisma_saatleri) return <p className="text-gray-500">Çalışma saatleri belirtilmemiş.</p>
 
     try {
-      const calismaSaatleri =
-        typeof isletme.calisma_saatleri === "string" ? JSON.parse(isletme.calisma_saatleri) : isletme.calisma_saatleri
+      // Çalışma saatleri artık obje olarak geliyor
+      const calismaSaatleri = isletme.calisma_saatleri
+      console.log("RENDER ÇALIŞMA SAATLERİ:", calismaSaatleri)
 
-      const gunler = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+      const gunler = ["pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar"]
+      const gunlerTurkce = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 
       return (
         <div className="space-y-2">
-          {gunler.map((gun) => {
-            const gunData = calismaSaatleri[gun.toLowerCase()]
+          {gunler.map((gun, index) => {
+            const gunData = calismaSaatleri[gun]
             if (!gunData) return null
+
+            const acik = gunData.acik !== false
+            const acilis = gunData.acilis || "00:00"
+            const kapanis = gunData.kapanis || "00:00"
 
             return (
               <div key={gun} className="flex justify-between items-center py-1 border-b border-gray-100 last:border-0">
-                <span className="font-medium">{gun}</span>
-                <span className={gunData.kapali ? "text-red-500" : "text-green-600"}>
-                  {gunData.kapali ? "Kapalı" : `${gunData.acilis || "00:00"} - ${gunData.kapanis || "00:00"}`}
+                <span className="font-medium">{gunlerTurkce[index]}</span>
+                <span className={acik ? "text-green-600" : "text-red-500"}>
+                  {acik ? `${acilis} - ${kapanis}` : "Kapalı"}
                 </span>
               </div>
             )
@@ -354,7 +360,7 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
         </div>
       )
     } catch (error) {
-      console.error("Çalışma saatleri parse edilemedi:", error)
+      console.error("Çalışma saatleri işlenemedi:", error)
       return <p className="text-gray-500">Çalışma saatleri belirtilmemiş.</p>
     }
   }
@@ -384,10 +390,16 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
       { key: "vegan_secenekler", label: "Vegan Seçenekler", icon: "salad" },
     ]
 
+    console.log("RENDER ÖZELLİKLER - İŞLETME:", isletme)
+
     const aktifOzellikler = ozellikler.filter((ozellik) => {
       const key = ozellik.key as keyof typeof isletme
-      return isletme[key] === true || isletme[key] === "true"
+      const value = isletme[key]
+      console.log(`ÖZELLİK ${ozellik.key}:`, value, typeof value)
+      return value === true || value === "true"
     })
+
+    console.log("AKTİF ÖZELLİKLER:", aktifOzellikler)
 
     if (aktifOzellikler.length === 0) {
       return <p className="text-gray-500">Özellik belirtilmemiş.</p>
@@ -512,6 +524,19 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
     setOpenFaq(openFaq === index ? null : index)
   }
 
+  // Harita iframe'i render et
+  const renderHaritaIframe = () => {
+    if (!isletme.harita_linki) return null
+
+    try {
+      // iframe HTML'ini güvenli bir şekilde işle
+      return <div className="h-[400px] w-full" dangerouslySetInnerHTML={{ __html: isletme.harita_linki }} />
+    } catch (error) {
+      console.error("Harita iframe işlenemedi:", error)
+      return <p className="text-gray-500">Harita görüntülenemiyor.</p>
+    }
+  }
+
   return (
     <>
       {/* SEO için yapısal veri */}
@@ -530,7 +555,7 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
             ref={heroRef}
             className="absolute inset-0 bg-cover bg-center hero-parallax"
             style={{
-              backgroundImage: `url(${sliderImages[0]?.url || "/placeholder.svg?height=800&width=1200"})`,
+              backgroundImage: `url(${isletme.fotograf_url || sliderImages[0]?.url || "/placeholder.svg?height=800&width=1200"})`,
             }}
           />
 
@@ -677,7 +702,7 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
                       />
                     </div>
                   ) : isletme.harita_linki ? (
-                    <div className="h-[400px]" dangerouslySetInnerHTML={{ __html: isletme.harita_linki }} />
+                    renderHaritaIframe()
                   ) : (
                     <div className="p-6">
                       <p className="text-gray-500">Konum bilgisi belirtilmemiş.</p>
@@ -693,7 +718,15 @@ export default function IsletmeDetayClient({ isletme, hizmetler }: IsletmeDetayC
                   description="İşletmenin Instagram hesabı"
                   className="animate-fade-in"
                 />
-                {isClient && <InstagramSimple username={extractInstagramUsername(isletme.sosyal_medya)} />}
+                {isClient && extractInstagramUsername(isletme.sosyal_medya) ? (
+                  <InstagramSimple username={extractInstagramUsername(isletme.sosyal_medya)} />
+                ) : (
+                  <InfoCard>
+                    <div className="text-center py-6">
+                      <p className="text-gray-500">Instagram bilgisi bulunamadı</p>
+                    </div>
+                  </InfoCard>
+                )}
               </section>
 
               {/* SSS Bölümü */}

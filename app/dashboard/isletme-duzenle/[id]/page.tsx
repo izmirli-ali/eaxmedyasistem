@@ -43,6 +43,7 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { useAutoSave } from "@/hooks/use-auto-save"
 import { ArrowLeft, Eye, Save, Trash2, AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react"
 import { slugify } from "@/utils/format-helpers"
+import { ImageUploadService } from "@/lib/image-upload-service"
 
 export default function IsletmeDuzenleSayfasi() {
   const router = useRouter()
@@ -404,50 +405,21 @@ export default function IsletmeDuzenleSayfasi() {
     if (selectedFiles.length === 0) return
 
     setUploadingPhotos(true)
-    const uploadedPhotos = [...(formData.fotograflar || [])]
+    setUploadProgress({}) // Reset upload progress
 
     try {
-      for (const file of selectedFiles) {
-        // Dosya yükleme işlemi simülasyonu
-        // Gerçek uygulamada burada dosya yükleme API'si kullanılır
+      const uploadService = new ImageUploadService()
+      const uploadedUrls = await uploadService.upload(selectedFiles, setUploadProgress)
 
-        // Yükleme ilerlemesini güncelle
-        setUploadProgress((prev) => ({
-          ...prev,
-          [file.name]: 0,
-        }))
-
-        // Yükleme simülasyonu
-        await new Promise<void>((resolve) => {
-          let progress = 0
-          const interval = setInterval(() => {
-            progress += 10
-            setUploadProgress((prev) => ({
-              ...prev,
-              [file.name]: progress,
-            }))
-
-            if (progress >= 100) {
-              clearInterval(interval)
-              resolve()
-            }
-          }, 200)
-        })
-
-        // Dosya URL'sini oluştur (gerçek uygulamada API'den dönen URL kullanılır)
-        const fileUrl = URL.createObjectURL(file)
-
-        // Fotoğrafı listeye ekle
-        uploadedPhotos.push({
-          url: fileUrl,
-          order: uploadedPhotos.length,
-        })
-      }
+      // Mevcut fotoğrafları koru ve yenilerini ekle
+      const existingPhotos = formData.fotograflar || []
+      const newPhotos = uploadedUrls.map((url) => ({ url, order: existingPhotos.length + uploadedUrls.indexOf(url) }))
+      const allPhotos = [...existingPhotos, ...newPhotos]
 
       // Formdata'yı güncelle
       setFormData((prev) => ({
         ...prev,
-        fotograflar: uploadedPhotos,
+        fotograflar: allPhotos,
       }))
 
       // Seçili dosyaları temizle
@@ -466,7 +438,6 @@ export default function IsletmeDuzenleSayfasi() {
       console.error("Fotoğraflar yüklenirken hata oluştu:", error)
     } finally {
       setUploadingPhotos(false)
-      setUploadProgress({})
     }
   }
 

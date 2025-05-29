@@ -32,7 +32,7 @@ export default function IsletmeListesi() {
       try {
         // Şehirleri çek
         const { data: sehirData } = await supabase
-          .from("isletmeler")
+          .from("isletmeler2")
           .select("sehir")
           .not("sehir", "is", null)
           .order("sehir")
@@ -44,7 +44,7 @@ export default function IsletmeListesi() {
 
         // Kategorileri çek
         const { data: kategoriData } = await supabase
-          .from("isletmeler")
+          .from("isletmeler2")
           .select("kategori")
           .not("kategori", "is", null)
           .order("kategori")
@@ -68,7 +68,7 @@ export default function IsletmeListesi() {
         setLoading(true)
 
         let query = supabase
-          .from("isletmeler")
+          .from("isletmeler2")
           .select("id, isletme_adi, kategori, adres, fotograf_url, sehir, slug, url_slug")
           .order("isletme_adi")
 
@@ -86,6 +86,9 @@ export default function IsletmeListesi() {
         if (selectedCategory && selectedCategory !== "all") {
           query = query.eq("kategori", selectedCategory)
         }
+
+        // Aktif işletmeleri getir
+        query = query.eq("aktif", true)
 
         const { data, error } = await query
 
