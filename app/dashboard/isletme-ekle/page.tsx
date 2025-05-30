@@ -4,10 +4,23 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
-import { Form } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Select } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { toast } from "sonner"
 import { isletmeEkle } from "@/app/actions/isletme"
 
@@ -74,115 +87,117 @@ export default function IsletmeEklePage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <Form.Field
+              <FormField
                 control={form.control}
                 name="isletme_adi"
                 render={({ field }) => (
-                  <Form.Item>
-                    <Form.Label>İşletme Adı</Form.Label>
-                    <Form.Control>
+                  <FormItem>
+                    <FormLabel>İşletme Adı</FormLabel>
+                    <FormControl>
                       <Input placeholder="İşletme adını giriniz" {...field} />
-                    </Form.Control>
-                    <Form.Message />
-                  </Form.Item>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
 
-              <Form.Field
+              <FormField
                 control={form.control}
                 name="adres"
                 render={({ field }) => (
-                  <Form.Item>
-                    <Form.Label>Adres</Form.Label>
-                    <Form.Control>
+                  <FormItem>
+                    <FormLabel>Adres</FormLabel>
+                    <FormControl>
                       <Textarea placeholder="Adresi giriniz" {...field} />
-                    </Form.Control>
-                    <Form.Message />
-                  </Form.Item>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
 
-              <Form.Field
+              <FormField
                 control={form.control}
                 name="telefon"
                 render={({ field }) => (
-                  <Form.Item>
-                    <Form.Label>Telefon</Form.Label>
-                    <Form.Control>
+                  <FormItem>
+                    <FormLabel>Telefon</FormLabel>
+                    <FormControl>
                       <Input placeholder="Telefon numarasını giriniz" {...field} />
-                    </Form.Control>
-                    <Form.Message />
-                  </Form.Item>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
 
-              <Form.Field
+              <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <Form.Item>
-                    <Form.Label>E-posta</Form.Label>
-                    <Form.Control>
+                  <FormItem>
+                    <FormLabel>E-posta</FormLabel>
+                    <FormControl>
                       <Input type="email" placeholder="E-posta adresini giriniz" {...field} />
-                    </Form.Control>
-                    <Form.Message />
-                  </Form.Item>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </div>
 
             <div className="space-y-4">
-              <Form.Field
+              <FormField
                 control={form.control}
                 name="website"
                 render={({ field }) => (
-                  <Form.Item>
-                    <Form.Label>Website</Form.Label>
-                    <Form.Control>
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
                       <Input placeholder="Website adresini giriniz" {...field} />
-                    </Form.Control>
-                    <Form.Message />
-                  </Form.Item>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
 
-              <Form.Field
+              <FormField
                 control={form.control}
                 name="kategori"
                 render={({ field }) => (
-                  <Form.Item>
-                    <Form.Label>Kategori</Form.Label>
+                  <FormItem>
+                    <FormLabel>Kategori</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
-                      <Select.Trigger>
-                        <Select.Value placeholder="Kategori seçiniz" />
-                      </Select.Trigger>
-                      <Select.Content>
-                        <Select.Item value="restoran">Restoran</Select.Item>
-                        <Select.Item value="kafe">Kafe</Select.Item>
-                        <Select.Item value="otel">Otel</Select.Item>
-                        <Select.Item value="market">Market</Select.Item>
-                        <Select.Item value="diger">Diğer</Select.Item>
-                      </Select.Content>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Kategori seçiniz" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="restoran">Restoran</SelectItem>
+                        <SelectItem value="kafe">Kafe</SelectItem>
+                        <SelectItem value="otel">Otel</SelectItem>
+                        <SelectItem value="market">Market</SelectItem>
+                        <SelectItem value="diger">Diğer</SelectItem>
+                      </SelectContent>
                     </Select>
-                    <Form.Message />
-                  </Form.Item>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
 
-              <Form.Field
+              <FormField
                 control={form.control}
                 name="aciklama"
                 render={({ field }) => (
-                  <Form.Item>
-                    <Form.Label>Açıklama</Form.Label>
-                    <Form.Control>
+                  <FormItem>
+                    <FormLabel>Açıklama</FormLabel>
+                    <FormControl>
                       <Textarea placeholder="İşletme hakkında açıklama giriniz" {...field} />
-                    </Form.Control>
-                    <Form.Message />
-                  </Form.Item>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </div>
