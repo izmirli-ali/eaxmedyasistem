@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -17,7 +17,6 @@ interface LazyImageProps {
   quality?: number
   objectFit?: "cover" | "contain" | "fill" | "none" | "scale-down"
   onLoad?: () => void
-  fetchPriority?: "high" | "low" | "auto"
 }
 
 export function LazyImage({
@@ -32,13 +31,10 @@ export function LazyImage({
   quality = 75,
   objectFit = "cover",
   onLoad,
-  fetchPriority = "auto",
 }: LazyImageProps) {
   const [isLoading, setIsLoading] = useState(!priority)
   const [error, setError] = useState(false)
   const [imageSrc, setImageSrc] = useState(src || "/placeholder.svg")
-  const imageRef = useRef<HTMLImageElement>(null)
-  const observerRef = useRef<IntersectionObserver | null>(null)
 
   useEffect(() => {
     // Src değiştiğinde yükleme durumunu sıfırla
@@ -48,37 +44,6 @@ export function LazyImage({
     setError(false)
     setImageSrc(src || "/placeholder.svg")
   }, [src, priority])
-
-  useEffect(() => {
-    // Intersection Observer ile görünür olduğunda yükleme
-    if (!priority && imageRef.current && "IntersectionObserver" in window) {
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              // Görünür olduğunda yüksek öncelikle yükle
-              if (imageRef.current) {
-                imageRef.current.fetchPriority = "high"
-              }
-              // Observer'ı temizle
-              if (observerRef.current) {
-                observerRef.current.disconnect()
-              }
-            }
-          })
-        },
-        { rootMargin: "200px" }, // 200px önce yüklemeye başla
-      )
-
-      observerRef.current.observe(imageRef.current)
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-    }
-  }, [priority])
 
   const handleLoad = () => {
     setIsLoading(false)
@@ -100,7 +65,6 @@ export function LazyImage({
         />
       )}
       <Image
-        ref={imageRef}
         src={imageSrc || "/placeholder.svg"}
         alt={alt}
         width={fill ? undefined : width}
@@ -123,7 +87,6 @@ export function LazyImage({
         onError={handleError}
         loading={priority ? "eager" : "lazy"}
         decoding="async"
-        fetchPriority={priority ? "high" : fetchPriority}
       />
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500 text-sm">

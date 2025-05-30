@@ -1,171 +1,130 @@
-/**
- * Zamanlanmış yedekleme işlemleri için yardımcı fonksiyonlar
- */
-
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/server"
 import { logger } from "@/lib/logger"
-import { tryCatch, AppError } from "@/lib/error-handler"
 
 /**
  * Zamanlanmış yedekleme işlemini çalıştırır
- * @returns {Promise<{success: boolean, message: string, data?: any}>} İşlem sonucu
+ * @returns {Promise<Object>} Yedekleme sonucu
  */
 export async function runScheduledBackup() {
-  return tryCatch(async () => {
-    logger.info("Zamanlanmış yedekleme işlemi başlatıldı")
-
+  try {
+    logger.info("Zamanlanmış yedekleme başlatılıyor...")
+    const startTime = Date.now()
     const supabase = createClient()
-    const timestamp = new Date().toISOString()
-    const backupName = `scheduled_backup_${timestamp.replace(/[:.]/g, "-")}`
 
-    // Yedekleme kaydı oluştur
-    const { data: backupRecord, error: backupError } = await supabase
-      .from("backups")
-      .insert([
-        {
-          dosya_adi: backupName,
-          olusturma_tarihi: timestamp,
-          durum: "başladı",
-          yedekleme_turu: "zamanlanmış",
-          notlar: "Otomatik zamanlanmış yedekleme",
-        },
-      ])
-      .select()
+    // Yedekleme zamanlamasını güncelle
+    const now = new Date()
+    await supabase
+      .from("backup_schedules")
+      .update({
+        last_run: now.toISOString(),
+        updated_at: now.toISOString(),
+      })
+      .eq("id", 1)
 
-    if (backupError) {
-      throw new AppError("Yedekleme kaydı oluşturulamadı", "BACKUP_RECORD_ERROR", backupError)
+    // Yedeklenecek tabloları al
+    const { data: tables, error: tablesError } = await supabase.from("backup_tables").select("*").eq("enabled", true)
+
+    if (tablesError) {
+      throw new Error(`Yedeklenecek tablolar alınamadı: ${tablesError.message}`)
     }
 
-    const backupId = backupRecord[0].id
-
-    try {
-      // Yedeklenecek tabloları belirle
-      const tables = [
-        "isletmeler",
-        "isletmeler2",
-        "kullanicilar",
-        "musteriler",
-        "site_ayarlari",
-        "backups",
-        "on_basvurular",
-        "bildirimler",
-        "gorevler",
-        "content_reminders",
-        "change_logs",
-        "system_logs",
-      ]
-
-      const backupData: Record<string, any> = {}
-
-      // Her tablodan veri al
-      for (const table of tables) {
-        const { data, error } = await supabase.from(table).select("*")
-
-        if (error) {
-          logger.error(`${table} tablosu yedeklenirken hata oluştu:`, error)
-          continue
-        }
-
-        backupData[table] = data
-      }
-
-      // Yedekleme dosyasını storage'a kaydet
-      const { error: storageError } = await supabase.storage
-        .from("backups")
-        .upload(`${backupName}.json`, JSON.stringify(backupData, null, 2))
-
-      if (storageError) {
-        throw new AppError("Yedekleme dosyası kaydedilemedi", "BACKUP_STORAGE_ERROR", storageError)
-      }
-
-      // Yedekleme kaydını güncelle
-      const { error: updateError } = await supabase
-        .from("backups")
-        .update({
-          durum: "tamamlandı",
-          dosya_boyutu: JSON.stringify(backupData).length,
-          dosya_yolu: `backups/${backupName}.json`,
-        })
-        .eq("id", backupId)
-
-      if (updateError) {
-        throw new AppError("Yedekleme kaydı güncellenemedi", "BACKUP_UPDATE_ERROR", updateError)
-      }
-
-      logger.info("Zamanlanmış yedekleme işlemi başarıyla tamamlandı")
-
+    if (!tables || tables.length === 0) {
       return {
         success: true,
-        message: "Yedekleme işlemi başarıyla tamamlandı",
-        data: {
-          backupId,
-          backupName,
-          timestamp,
-          tables: Object.keys(backupData),
-        },
+        message: "Yedeklenecek tablo bulunamadı",
+        timestamp: now.toISOString(),
+        duration: Date.now() - startTime,
       }
-    } catch (error: any) {
-      // Hata durumunda yedekleme kaydını güncelle
-      await supabase
-        .from("backups")
-        .update({
-          durum: "hata",
-          notlar: `Hata: ${error.message || "Bilinmeyen hata"}`,
-        })
-        .eq("id", backupId)
-
-      throw error
     }
-  }, "runScheduledBackup")
-}
 
-/**
- * Yedekleme durumunu kontrol eder
- * @returns {Promise<{success: boolean, message: string, data?: any}>} İşlem sonucu
- */
-export async function checkBackupStatus() {
-  return tryCatch(async () => {
-    const supabase = createClient()
+    // Her tablo için yedekleme yap
+    const backupResults = []
+    for (const table of tables) {
+      try {
+        // Tablo verilerini al
+        const { data, error } = await supabase.from(table.table_name).select("*")
 
-    // Son yedeklemeyi kontrol et
-    const { data: lastBackup, error } = await supabase
-      .from("backups")
-      .select("*")
-      .order("olusturma_tarihi", { ascending: false })
-      .limit(1)
-      .single()
-
-    if (error) {
-      if (error.code === "PGRST116") {
-        // Hiç yedekleme yok
-        return {
-          success: true,
-          message: "Henüz hiç yedekleme yapılmamış",
-          data: {
-            lastBackup: null,
-            needsBackup: true,
-          },
+        if (error) {
+          throw new Error(`Tablo verileri alınamadı (${table.table_name}): ${error.message}`)
         }
+
+        // Yedekleme kaydı oluştur
+        const { data: backupData, error: backupError } = await supabase.from("backups").insert({
+          table_name: table.table_name,
+          data: data,
+          created_at: now.toISOString(),
+          status: "completed",
+          record_count: data?.length || 0,
+        })
+
+        if (backupError) {
+          throw new Error(`Yedekleme kaydı oluşturulamadı (${table.table_name}): ${backupError.message}`)
+        }
+
+        backupResults.push({
+          table: table.table_name,
+          status: "success",
+          recordCount: data?.length || 0,
+        })
+
+        logger.info(`Tablo yedeklendi: ${table.table_name} (${data?.length || 0} kayıt)`)
+      } catch (error) {
+        logger.error(`Tablo yedekleme hatası (${table.table_name}):`, error)
+        backupResults.push({
+          table: table.table_name,
+          status: "error",
+          error: error.message,
+        })
+
+        // Hata kaydı oluştur
+        await supabase.from("backups").insert({
+          table_name: table.table_name,
+          created_at: now.toISOString(),
+          status: "error",
+          error_message: error.message,
+        })
       }
-      throw new AppError("Yedekleme durumu kontrol edilirken hata oluştu", "BACKUP_STATUS_ERROR", error)
     }
 
-    // Son yedeklemeden bu yana 24 saat geçmiş mi kontrol et
-    const lastBackupTime = new Date(lastBackup.olusturma_tarihi).getTime()
-    const currentTime = new Date().getTime()
-    const timeDiff = currentTime - lastBackupTime
-    const hoursDiff = timeDiff / (1000 * 60 * 60)
+    // Yedekleme log kaydı oluştur
+    await supabase.from("backup_logs").insert({
+      created_at: now.toISOString(),
+      status: "completed",
+      details: {
+        results: backupResults,
+        duration: Date.now() - startTime,
+      },
+    })
 
-    const needsBackup = hoursDiff >= 24 || lastBackup.durum !== "tamamlandı"
+    logger.info(`Zamanlanmış yedekleme tamamlandı (${Date.now() - startTime}ms)`)
 
     return {
       success: true,
-      message: needsBackup ? "Yeni bir yedekleme yapılması gerekiyor" : "Son yedekleme 24 saat içinde yapılmış",
-      data: {
-        lastBackup,
-        needsBackup,
-        hoursSinceLastBackup: Math.floor(hoursDiff),
-      },
+      message: "Zamanlanmış yedekleme tamamlandı",
+      timestamp: now.toISOString(),
+      duration: Date.now() - startTime,
+      results: backupResults,
     }
-  }, "checkBackupStatus")
+  } catch (error) {
+    logger.error("Zamanlanmış yedekleme hatası:", error)
+
+    // Hata log kaydı oluştur
+    try {
+      const supabase = createClient()
+      await supabase.from("backup_logs").insert({
+        created_at: new Date().toISOString(),
+        status: "error",
+        error_message: error.message,
+      })
+    } catch (logError) {
+      logger.error("Yedekleme hata logu oluşturulamadı:", logError)
+    }
+
+    return {
+      success: false,
+      message: "Zamanlanmış yedekleme sırasında hata oluştu",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    }
+  }
 }

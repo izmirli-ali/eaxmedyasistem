@@ -12,16 +12,6 @@ interface IletisimBilgileriFormProps {
 }
 
 export function IletisimBilgileriForm({ formData, onChange, errors }: IletisimBilgileriFormProps) {
-  // Sosyal medya değerlerini güncelleme fonksiyonu
-  const handleSosyalMedyaChange = (platform: string, value: string) => {
-    // Mevcut sosyal medya değerlerini al
-    const sosyalMedya = { ...(formData.sosyal_medya || {}) }
-    // Yeni değeri güncelle
-    sosyalMedya[platform] = value
-    // Tüm sosyal medya nesnesini güncelle
-    onChange("sosyal_medya", sosyalMedya)
-  }
-
   return (
     <Card className="border-none shadow-none">
       <CardContent className="p-0 space-y-6">
@@ -80,7 +70,7 @@ export function IletisimBilgileriForm({ formData, onChange, errors }: IletisimBi
                 <Input
                   id="facebook"
                   value={formData.sosyal_medya?.facebook || ""}
-                  onChange={(e) => handleSosyalMedyaChange("facebook", e.target.value)}
+                  onChange={(e) => onChange("sosyal_medya.facebook", e.target.value)}
                   className={`pl-10 ${errors["sosyal_medya.facebook"] ? "border-destructive" : ""}`}
                   placeholder="https://www.facebook.com/sayfaadi"
                 />
@@ -99,7 +89,7 @@ export function IletisimBilgileriForm({ formData, onChange, errors }: IletisimBi
                 <Input
                   id="instagram"
                   value={formData.sosyal_medya?.instagram || ""}
-                  onChange={(e) => handleSosyalMedyaChange("instagram", e.target.value)}
+                  onChange={(e) => onChange("sosyal_medya.instagram", e.target.value)}
                   className={`pl-10 ${errors["sosyal_medya.instagram"] ? "border-destructive" : ""}`}
                   placeholder="https://www.instagram.com/kullaniciadi"
                 />
@@ -118,7 +108,7 @@ export function IletisimBilgileriForm({ formData, onChange, errors }: IletisimBi
                 <Input
                   id="twitter"
                   value={formData.sosyal_medya?.twitter || ""}
-                  onChange={(e) => handleSosyalMedyaChange("twitter", e.target.value)}
+                  onChange={(e) => onChange("sosyal_medya.twitter", e.target.value)}
                   className={`pl-10 ${errors["sosyal_medya.twitter"] ? "border-destructive" : ""}`}
                   placeholder="https://twitter.com/kullaniciadi"
                 />
@@ -137,7 +127,7 @@ export function IletisimBilgileriForm({ formData, onChange, errors }: IletisimBi
                 <Input
                   id="youtube"
                   value={formData.sosyal_medya?.youtube || ""}
-                  onChange={(e) => handleSosyalMedyaChange("youtube", e.target.value)}
+                  onChange={(e) => onChange("sosyal_medya.youtube", e.target.value)}
                   className={`pl-10 ${errors["sosyal_medya.youtube"] ? "border-destructive" : ""}`}
                   placeholder="https://www.youtube.com/channel/..."
                 />
@@ -156,7 +146,7 @@ export function IletisimBilgileriForm({ formData, onChange, errors }: IletisimBi
                 <Input
                   id="linkedin"
                   value={formData.sosyal_medya?.linkedin || ""}
-                  onChange={(e) => handleSosyalMedyaChange("linkedin", e.target.value)}
+                  onChange={(e) => onChange("sosyal_medya.linkedin", e.target.value)}
                   className={`pl-10 ${errors["sosyal_medya.linkedin"] ? "border-destructive" : ""}`}
                   placeholder="https://www.linkedin.com/company/..."
                 />

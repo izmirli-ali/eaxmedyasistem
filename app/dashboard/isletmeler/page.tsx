@@ -211,7 +211,7 @@ export default function IsletmelerSayfasi() {
                 <SelectValue placeholder="Kategori seçin" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tüm Kategoriler</SelectItem>
+                <SelectItem value="all">Tüm Kategoriler</SelectItem>
                 {kategoriler.map((kategori) => (
                   <SelectItem key={kategori} value={kategori}>
                     {kategori}
@@ -239,7 +239,7 @@ export default function IsletmelerSayfasi() {
                 <SelectValue placeholder="Durum seçin" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tüm Durumlar</SelectItem>
+                <SelectItem value="all">Tüm Durumlar</SelectItem>
                 <SelectItem value="aktif">Aktif</SelectItem>
                 <SelectItem value="pasif">Pasif</SelectItem>
                 <SelectItem value="one_cikan">Öne Çıkan</SelectItem>

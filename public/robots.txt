@@ -1,49 +1,13 @@
-# İşletme Yönetim Sistemi Robots.txt
+# İyileştirilmiş robots.txt dosyası
 User-agent: *
 Allow: /
 
 # Özel sayfaları engelle
 Disallow: /admin/
 Disallow: /api/
-Disallow: /dashboard/
-Disallow: /giris/
-Disallow: /kayit/
-Disallow: /sifre-sifirlama/
 Disallow: /_next/
-
-# Medya dosyalarını taramaya izin ver
-Allow: /*.js$
-Allow: /*.css$
-Allow: /*.png$
-Allow: /*.jpg$
-Allow: /*.jpeg$
-Allow: /*.gif$
-Allow: /*.svg$
-Allow: /*.webp$
-
-# Özel arama motorları için
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 2
-
-User-agent: Yandex
-Allow: /
-Crawl-delay: 2
 
 # Sitemap
 Sitemap: https://isletmenionecikar.com/sitemap.xml
 
-# Host
-Host: isletmenionecikar.com
-
-# Resim indeksleme
-User-agent: Googlebot-Image
-Allow: /
-
-# Mobil indeksleme
-User-agent: Googlebot-Mobile
-Allow: /
+# Crawl-delay: 10

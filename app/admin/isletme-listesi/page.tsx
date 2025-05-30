@@ -30,7 +30,6 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
-  AlertTriangle,
 } from "lucide-react"
 import { supabase } from "@/supabase"
 import type { Business } from "@/types"
@@ -61,25 +60,11 @@ export default function IsletmeListesi() {
       const { data, error } = await supabase.from("isletmeler2").select("*").order("created_at", { ascending: false })
 
       if (error) throw error
-
-      // URL slug kontrolü ve düzeltme
-      const processedData =
-        data?.map((business) => {
-          if (!business.url_slug) {
-            // URL slug yoksa oluştur
-            const slug = createSlug(business.isletme_adi, business.sehir)
-            // Veritabanında güncelle
-            updateBusinessSlug(business.id, slug)
-            return { ...business, url_slug: slug }
-          }
-          return business
-        }) || []
-
-      setBusinesses(processedData)
+      setBusinesses(data || [])
 
       // Kategorileri ve şehirleri çıkar
-      const uniqueKategoriler = Array.from(new Set(processedData.map((i: Business) => i.kategori).filter(Boolean)))
-      const uniqueSehirler = Array.from(new Set(processedData.map((i: Business) => i.sehir).filter(Boolean)))
+      const uniqueKategoriler = Array.from(new Set(data.map((i: Business) => i.kategori).filter(Boolean)))
+      const uniqueSehirler = Array.from(new Set(data.map((i: Business) => i.sehir).filter(Boolean)))
 
       setKategoriler(uniqueKategoriler as string[])
       setSehirler(uniqueSehirler as string[])
@@ -92,68 +77,6 @@ export default function IsletmeListesi() {
       console.error("İşletme verileri alınamadı:", error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  // URL slug oluşturma fonksiyonu
-  const createSlug = (name: string, city?: string): string => {
-    if (!name) return ""
-
-    // Türkçe karakterleri değiştir
-    const turkishChars: { [key: string]: string } = {
-      ç: "c",
-      ğ: "g",
-      ı: "i",
-      ö: "o",
-      ş: "s",
-      ü: "u",
-      Ç: "C",
-      Ğ: "G",
-      İ: "I",
-      Ö: "O",
-      Ş: "S",
-      Ü: "U",
-    }
-
-    let slug = name.toLowerCase()
-
-    // Türkçe karakterleri değiştir
-    Object.keys(turkishChars).forEach((char) => {
-      slug = slug.replace(new RegExp(char, "g"), turkishChars[char])
-    })
-
-    // Özel karakterleri kaldır ve boşlukları tire ile değiştir
-    slug = slug
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim()
-
-    // Şehir varsa ekle
-    if (city) {
-      const citySlug = city
-        .toLowerCase()
-        .replace(/[çğıöşü]/g, (c) => turkishChars[c] || c)
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .trim()
-
-      return `${citySlug}/${slug}`
-    }
-
-    return slug
-  }
-
-  // URL slug güncelleme fonksiyonu
-  const updateBusinessSlug = async (id: string, slug: string) => {
-    try {
-      const { error } = await supabase.from("isletmeler2").update({ url_slug: slug }).eq("id", id)
-
-      if (error) throw error
-
-      console.log(`İşletme #${id} için URL slug güncellendi: ${slug}`)
-    } catch (error) {
-      console.error("URL slug güncellenirken hata oluştu:", error)
     }
   }
 
@@ -291,52 +214,7 @@ export default function IsletmeListesi() {
 
   // URL slug'ı veya ID'yi al
   const getEditUrl = (business: Business) => {
-    if (!business.url_slug) {
-      // URL slug yoksa uyarı göster ve ID ile yönlendir
-      toast({
-        variant: "warning",
-        title: "URL Slug Eksik",
-        description: "Bu işletme için URL slug oluşturulacak ve sayfa yenilenecek.",
-      })
-
-      // URL slug oluştur ve güncelle
-      const slug = createSlug(business.isletme_adi, business.sehir)
-      updateBusinessSlug(business.id, slug)
-
-      // Sayfayı yenile
-      setTimeout(() => {
-        fetchBusinesses()
-      }, 1000)
-
-      return `/admin/isletme-duzenle/${business.id}`
-    }
-
-    return `/admin/isletme-duzenle/${business.url_slug}`
-  }
-
-  // Görüntüleme URL'i
-  const getViewUrl = (business: Business) => {
-    if (!business.url_slug) {
-      // URL slug yoksa uyarı göster
-      toast({
-        variant: "warning",
-        title: "URL Slug Eksik",
-        description: "Bu işletme için URL slug oluşturulacak ve sayfa yenilenecek.",
-      })
-
-      // URL slug oluştur ve güncelle
-      const slug = createSlug(business.isletme_adi, business.sehir)
-      updateBusinessSlug(business.id, slug)
-
-      // Sayfayı yenile
-      setTimeout(() => {
-        fetchBusinesses()
-      }, 1000)
-
-      return `/isletme/${business.id}`
-    }
-
-    return `/isletme/${business.url_slug}`
+    return `/admin/isletme-duzenle/${business.url_slug || business.id}`
   }
 
   if (loading) {
@@ -360,21 +238,6 @@ export default function IsletmeListesi() {
           </Button>
         </Link>
       </div>
-
-      {businesses.some((b) => !b.url_slug) && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-          <div className="flex items-start">
-            <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-yellow-800">Dikkat</h3>
-              <p className="text-sm text-yellow-700">
-                Bazı işletmelerin URL slug'ı eksik. Bu işletmeleri düzenlediğinizde veya görüntülediğinizde, URL
-                slug'ları otomatik olarak oluşturulacak ve güncellenecektir.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Card className="mb-6">
         <CardHeader>
@@ -520,12 +383,6 @@ export default function IsletmeListesi() {
                                     <span>Öne Çıkan</span>
                                   </div>
                                 )}
-                                {!business.url_slug && (
-                                  <div className="flex items-center gap-1 text-yellow-500 text-xs">
-                                    <AlertTriangle className="h-3 w-3" />
-                                    <span>URL Slug Eksik</span>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </TableCell>
@@ -644,15 +501,6 @@ export default function IsletmeListesi() {
                         {business.aktif ? "Aktif" : "Pasif"}
                       </Badge>
                     </div>
-
-                    {!business.url_slug && (
-                      <div className="absolute bottom-2 left-2">
-                        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          URL Slug Eksik
-                        </Badge>
-                      </div>
-                    )}
                   </div>
 
                   <CardContent className="pt-4">
@@ -701,7 +549,7 @@ export default function IsletmeListesi() {
                       <Button
                         variant="outline"
                         className="flex-1"
-                        onClick={() => window.open(getViewUrl(business), "_blank")}
+                        onClick={() => window.open(`/isletme/${business.url_slug || business.id}`, "_blank")}
                       >
                         <Eye className="mr-2 h-4 w-4" />
                         Görüntüle

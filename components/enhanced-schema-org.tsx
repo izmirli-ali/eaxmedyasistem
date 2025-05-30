@@ -193,46 +193,61 @@ export function EnhancedSchemaOrg({ isletme, siteUrl }: EnhancedSchemaOrgProps) 
       streetAddress: isletme.adres || "",
       addressLocality: isletme.ilce || "",
       addressRegion: isletme.sehir || "",
-      postalCode: isletme.posta_kodu || "",
       addressCountry: "TR",
     },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: isletme.latitude || "",
-      longitude: isletme.longitude || "",
-    },
-    openingHoursSpecification: generateOpeningHours(),
-    potentialAction: {
-      "@type": "ReserveAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${siteUrl}/rezervasyon`,
-        inLanguage: "tr-TR",
-        actionPlatform: ["http://schema.org/DesktopWebPlatform", "http://schema.org/MobileWebPlatform"],
-      },
-      result: {
-        "@type": "Reservation",
-      },
-    },
-    sameAs: [isletme.website_url || "", isletme.sosyal_medya_url || ""],
-    hasOfferCatalog: {
-      "@type": "OfferCatalog",
-      name: "Ürün ve Hizmetler",
-      itemListElement: [...getOfferedProducts(), ...getOfferedServices()],
-    },
-    sertifika: getSertifikalar(),
-    award: getOdullar(),
-    video: getVideoObject(),
   }
 
-  // İnceleme yapısal verisi (isteğe bağlı)
-  if (isletme.ortalama_degerlendirme && isletme.degerlendirme_sayisi) {
-    schemaData.aggregateRating = {
-      "@type": "AggregateRating",
-      ratingValue: isletme.ortalama_degerlendirme,
-      ratingCount: isletme.degerlendirme_sayisi,
+  // Koordinatlar varsa ekle
+  if (isletme.latitude && isletme.longitude) {
+    schemaData.geo = {
+      "@type": "GeoCoordinates",
+      latitude: Number.parseFloat(isletme.latitude.toString()),
+      longitude: Number.parseFloat(isletme.longitude.toString()),
     }
   }
 
-  return <script type="application/ld+json">{JSON.stringify(schemaData, null, 2)}</script>
+  // Çalışma saatleri varsa ekle
+  const openingHours = generateOpeningHours()
+  if (openingHours.length > 0) {
+    schemaData.openingHoursSpecification = openingHours
+  }
+
+  // Öne çıkan ürünler ve hizmetler varsa ekle
+  const offeredProducts = getOfferedProducts()
+  const offeredServices = getOfferedServices()
+  const allOffers = [...offeredProducts, ...offeredServices]
+
+  if (allOffers.length > 0) {
+    schemaData.makesOffer = allOffers
+  }
+
+  // Video varsa ekle
+  const videoObject = getVideoObject()
+  if (videoObject) {
+    schemaData.video = videoObject
+  }
+
+  // Kuruluş yılı varsa ekle
+  if (isletme.kurulus_yili) {
+    schemaData.foundingDate = `${isletme.kurulus_yili}-01-01`
+  }
+
+  // Sertifikalar ve ödüller varsa ekle
+  const sertifikalar = getSertifikalar()
+  if (sertifikalar.length > 0) {
+    schemaData.hasCredential = sertifikalar
+  }
+
+  const odullar = getOdullar()
+  if (odullar.length > 0) {
+    schemaData.award = odullar
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      key="schema-localBusiness"
+    />
+  )
 }

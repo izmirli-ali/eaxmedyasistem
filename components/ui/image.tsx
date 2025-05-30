@@ -1,79 +1,35 @@
-"use client"
+import * as React from "react"
 
-import NextImage, { type ImageProps as NextImageProps } from "next/image"
-import { useState } from "react"
-import { cn } from "@/lib/utils"
-
-interface ImageProps extends Omit<NextImageProps, "onLoad" | "onError"> {
-  fallback?: string
+interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  src: string
+  alt: string
+  fill?: boolean
+  width?: number
+  height?: number
   className?: string
-  imgClassName?: string
-  aspectRatio?: "auto" | "square" | "video" | "portrait" | "custom"
-  customAspectRatio?: string
 }
 
-export function Image({
-  src,
-  alt,
-  fallback = "/placeholder.svg",
-  width,
-  height,
-  className,
-  imgClassName,
-  aspectRatio = "auto",
-  customAspectRatio,
-  ...props
-}: ImageProps) {
-  const [error, setError] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-
-  // Aspect ratio sınıfları
-  const aspectRatioClasses = {
-    auto: "",
-    square: "aspect-square",
-    video: "aspect-video",
-    portrait: "aspect-[3/4]",
-    custom: "",
-  }
-
-  // Görsel yüklendiğinde
-  const handleLoad = () => {
-    setLoaded(true)
-  }
-
-  // Görsel yüklenemediğinde
-  const handleError = () => {
-    setError(true)
-  }
-
-  // Özel aspect ratio için style
-  const customAspectRatioStyle = aspectRatio === "custom" && customAspectRatio ? { aspectRatio: customAspectRatio } : {}
-
-  return (
-    <div
-      className={cn(
-        "relative overflow-hidden",
-        aspectRatio !== "auto" && aspectRatioClasses[aspectRatio],
-        !loaded && "bg-muted animate-pulse",
-        className,
-      )}
-      style={customAspectRatioStyle}
-    >
-      <NextImage
-        src={error ? fallback : src}
+const Image = React.forwardRef<HTMLImageElement, ImageProps>(
+  ({ src, alt, fill, width, height, className, ...props }, ref) => {
+    return (
+      <img
+        ref={ref}
+        src={src || "/placeholder.svg"}
         alt={alt}
+        className={className}
+        style={{
+          ...(fill ? { position: "absolute", width: "100%", height: "100%", top: 0, left: 0 } : {}),
+          objectFit: "cover",
+          ...(width ? { width: width } : {}),
+          ...(height ? { height: height } : {}),
+        }}
         width={width}
         height={height}
-        className={cn("transition-opacity duration-300", loaded ? "opacity-100" : "opacity-0", imgClassName)}
         {...props}
-        onLoad={(event) => {
-          handleLoad()
-          if (props.onLoadingComplete) {
-            props.onLoadingComplete(event.currentTarget as HTMLImageElement)
-          }
-        }}
-        onError={handleError}
       />
-    </div>
-  )
-}
+    )
+  },
+)
+Image.displayName = "Image"
+
+export { Image }
