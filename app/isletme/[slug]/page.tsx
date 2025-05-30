@@ -9,101 +9,96 @@ import { EnhancedSchemaOrg } from "@/components/enhanced-schema-org"
 // Dinamik metadata
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const supabase = createClient()
-
-  // İşletmeyi getir - isletmeler2 tablosundan
-  const { data: isletme, error } = await supabase.from("isletmeler2").select("*").eq("url_slug", params.slug).single()
+  const { data: isletme, error } = await supabase
+    .from("isletmeler")
+    .select("*")
+    .eq("url_slug", params.slug)
+    .single()
 
   if (error || !isletme) {
     return {
-      title: "İşletme Bulunamadı",
+      title: "İşletme Bulunamadı | İşletmeni Öne Çıkar",
       description: "Aradığınız işletme bulunamadı.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     }
   }
 
-  // Site URL'ini al
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://isletmenionecikar.com"
-  const canonicalUrl = `${siteUrl}/isletme/${params.slug}`
+  const siteUrl = "https://isletmenionecikar.com"
+  const canonicalUrl = `${siteUrl}/isletme/${isletme.url_slug}`
 
-  // Schema.org yapılandırması
-  const schemaOrgData = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "@id": canonicalUrl,
-    "name": isletme.isletme_adi,
-    "image": isletme.fotograf_url || "/placeholder.jpg",
-    "description": isletme.seo_aciklama || isletme.aciklama,
-    "url": canonicalUrl,
-    "telephone": isletme.telefon,
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": isletme.adres,
-      "addressLocality": isletme.sehir,
-      "addressRegion": isletme.ilce,
-      "postalCode": isletme.posta_kodu,
-      "addressCountry": "TR"
-    },
-    "geo": {
-      "@type": "GeoCoordinates",
-      "latitude": isletme.latitude,
-      "longitude": isletme.longitude
-    },
-    "priceRange": isletme.fiyat_araligi ? "₺".repeat(isletme.fiyat_araligi) : undefined,
-    "openingHoursSpecification": isletme.calisma_saatleri ? Object.entries(isletme.calisma_saatleri).map(([day, hours]) => ({
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": day,
-      "opens": hours.split("-")[0],
-      "closes": hours.split("-")[1]
-    })) : undefined,
-    "sameAs": isletme.sosyal_medya ? Object.values(isletme.sosyal_medya) : undefined,
-    "aggregateRating": isletme.puan ? {
-      "@type": "AggregateRating",
-      "ratingValue": isletme.puan,
-      "reviewCount": isletme.degerlendirme_sayisi || 0
-    } : undefined,
-    "servesCuisine": isletme.mutfak_turu,
-    "hasMenu": isletme.menu_url ? {
-      "@type": "Menu",
-      "url": isletme.menu_url
-    } : undefined,
-    "amenityFeature": [
-      isletme.wifi && { "@type": "LocationFeatureSpecification", "name": "WiFi", "value": true },
-      isletme.otopark && { "@type": "LocationFeatureSpecification", "name": "Otopark", "value": true },
-      isletme.engelli_erisim && { "@type": "LocationFeatureSpecification", "name": "Engelli Erişimi", "value": true }
-    ].filter(Boolean)
-  }
+  // SEO başlığı ve açıklaması oluştur
+  const title = isletme.seo_baslik || `${isletme.isletme_adi} - ${isletme.sehir} ${isletme.kategori} | İşletmeni Öne Çıkar`
+  const description = isletme.seo_aciklama || 
+    `${isletme.isletme_adi}, ${isletme.sehir} bölgesinde hizmet veren ${isletme.kategori} işletmesidir. ${isletme.aciklama?.substring(0, 120) || ""}`
+
+  // Anahtar kelimeleri oluştur
+  const keywords = [
+    isletme.isletme_adi,
+    isletme.kategori,
+    isletme.sehir,
+    isletme.ilce,
+    "işletme",
+    "yerel işletme",
+    "Google Haritalar",
+    "Google Maps",
+    ...(isletme.seo_anahtar_kelimeler ? isletme.seo_anahtar_kelimeler.split(",").map(k => k.trim()) : []),
+  ].filter(Boolean)
 
   return {
-    title: isletme.seo_baslik || isletme.isletme_adi,
-    description: isletme.seo_aciklama || (isletme.aciklama ? isletme.aciklama.substring(0, 160) : ""),
-    keywords: isletme.seo_anahtar_kelimeler,
+    title,
+    description,
+    keywords,
     openGraph: {
-      title: isletme.seo_baslik || isletme.isletme_adi,
-      description: isletme.seo_aciklama || (isletme.aciklama ? isletme.aciklama.substring(0, 160) : ""),
+      title,
+      description,
       url: canonicalUrl,
-      siteName: "İşletme Yönetim Sistemi",
+      siteName: "İşletmeni Öne Çıkar",
       images: [
         {
-          url: isletme.fotograf_url || "/placeholder.jpg",
+          url: isletme.fotograf_url || `${siteUrl}/placeholder.jpg`,
           width: 1200,
           height: 630,
           alt: isletme.isletme_adi,
         },
       ],
       locale: "tr_TR",
-      type: "website",
+      type: "business.business",
     },
     twitter: {
       card: "summary_large_image",
-      title: isletme.seo_baslik || isletme.isletme_adi,
-      description: isletme.seo_aciklama || (isletme.aciklama ? isletme.aciklama.substring(0, 160) : ""),
-      images: [isletme.fotograf_url || "/placeholder.jpg"],
+      title,
+      description,
+      images: [isletme.fotograf_url || `${siteUrl}/placeholder.jpg`],
+      creator: "@isletmenionecikar",
     },
     alternates: {
       canonical: canonicalUrl,
     },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
     other: {
-      "schema-org": JSON.stringify(schemaOrgData)
-    }
+      "business:contact_data:street_address": isletme.adres,
+      "business:contact_data:locality": isletme.ilce,
+      "business:contact_data:region": isletme.sehir,
+      "business:contact_data:postal_code": isletme.posta_kodu,
+      "business:contact_data:country_name": "Türkiye",
+      "business:contact_data:phone_number": isletme.telefon,
+      "business:contact_data:email": isletme.email,
+      "business:contact_data:website": canonicalUrl,
+      "business:contact_data:opening_hours": isletme.calisma_saatleri,
+    },
   }
 }
 

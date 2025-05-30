@@ -34,7 +34,7 @@ export function createMetadata({
   alternateUrls?: Record<string, string>
 }): Metadata {
   const fullTitle = createTitle(title)
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://isletmenionecikar.com"
+  const siteUrl = "https://isletmenionecikar.com"
   const url = `${siteUrl}${path}`
 
   // Alternatif dil URL'leri
@@ -443,5 +443,152 @@ export function createProductSchema(productData: {
     ...(productData.sku && { sku: productData.sku }),
     ...(productData.mpn && { mpn: productData.mpn }),
     ...(productData.gtin && { gtin: productData.gtin }),
+  }
+}
+
+// İşletme yapılandırılmış verisi oluşturmak için yardımcı fonksiyon
+export function createBusinessSchema({
+  name,
+  description,
+  image,
+  url,
+  telephone,
+  email,
+  address,
+  priceRange,
+  openingHours,
+  socialLinks,
+  category,
+  subCategory,
+  geo,
+  services,
+  hasMap,
+  aggregateRating,
+  foundingDate,
+  areaServed,
+  keywords,
+  accessibilityFeatures,
+  amenityFeature,
+  paymentAccepted,
+  publicAccess,
+  isAccessibleForFree,
+  smokingAllowed,
+}: {
+  name: string
+  description: string
+  image?: string
+  url: string
+  telephone?: string
+  email?: string
+  address?: {
+    locality?: string
+    region?: string
+    country?: string
+    streetAddress?: string
+    postalCode?: string
+  }
+  priceRange?: string
+  openingHours?: string
+  socialLinks?: string[]
+  category?: string
+  subCategory?: string
+  geo?: {
+    latitude: number
+    longitude: number
+  }
+  services?: string[]
+  hasMap?: string
+  aggregateRating?: {
+    ratingValue: number
+    reviewCount: number
+  }
+  foundingDate?: string
+  areaServed?: string[]
+  keywords?: string[]
+  accessibilityFeatures?: string[]
+  amenityFeature?: string[]
+  paymentAccepted?: string[]
+  publicAccess?: boolean
+  isAccessibleForFree?: boolean
+  smokingAllowed?: boolean
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name,
+    description,
+    ...(image && {
+      image: {
+        "@type": "ImageObject",
+        url: image,
+        width: 1200,
+        height: 630,
+      },
+    }),
+    url,
+    ...(telephone && { telephone }),
+    ...(email && { email }),
+    ...(address && {
+      address: {
+        "@type": "PostalAddress",
+        ...(address.streetAddress && { streetAddress: address.streetAddress }),
+        ...(address.locality && { addressLocality: address.locality }),
+        ...(address.region && { addressRegion: address.region }),
+        ...(address.country && { addressCountry: address.country }),
+        ...(address.postalCode && { postalCode: address.postalCode }),
+      },
+    }),
+    ...(priceRange && { priceRange }),
+    ...(openingHours && { openingHours }),
+    ...(socialLinks && socialLinks.length > 0 && { sameAs: socialLinks }),
+    ...(category && { "@type": ["LocalBusiness", category] }),
+    ...(subCategory && { subCategory }),
+    ...(geo && {
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+      },
+    }),
+    ...(services && services.length > 0 && {
+      makesOffer: services.map((service) => ({
+        "@type": "Offer",
+        itemOffered: {
+          "@type": "Service",
+          name: service,
+        },
+      })),
+    }),
+    ...(hasMap && { hasMap }),
+    ...(aggregateRating && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: aggregateRating.ratingValue,
+        reviewCount: aggregateRating.reviewCount,
+      },
+    }),
+    ...(foundingDate && { foundingDate }),
+    ...(areaServed && areaServed.length > 0 && {
+      areaServed: areaServed.map((area) => ({
+        "@type": "City",
+        name: area,
+      })),
+    }),
+    ...(keywords && keywords.length > 0 && { keywords: keywords.join(", ") }),
+    ...(accessibilityFeatures && accessibilityFeatures.length > 0 && {
+      accessibilityFeature: accessibilityFeatures,
+    }),
+    ...(amenityFeature && amenityFeature.length > 0 && {
+      amenityFeature: amenityFeature.map((amenity) => ({
+        "@type": "LocationFeatureSpecification",
+        name: amenity,
+      })),
+    }),
+    ...(paymentAccepted && paymentAccepted.length > 0 && {
+      paymentAccepted: paymentAccepted,
+    }),
+    ...(typeof publicAccess !== "undefined" && { publicAccess }),
+    ...(typeof isAccessibleForFree !== "undefined" && { isAccessibleForFree }),
+    ...(typeof smokingAllowed !== "undefined" && { smokingAllowed }),
   }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapPin, Building, Search, Filter } from "lucide-react"
 import Link from "next/link"
 
-export default function IsletmeListesi() {
+function IsletmeListesiInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -251,5 +251,13 @@ export default function IsletmeListesi() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function IsletmeListesi() {
+  return (
+    <Suspense fallback={<div>Yükleniyor...</div>}>
+      <IsletmeListesiInner />
+    </Suspense>
   )
 }

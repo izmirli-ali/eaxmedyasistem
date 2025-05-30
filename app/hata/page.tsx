@@ -4,8 +4,9 @@ import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle } from "lucide-react"
+import { Suspense } from "react"
 
-export default function ErrorPage() {
+function ErrorPageInner() {
   const searchParams = useSearchParams()
   const errorCode = searchParams.get("kod")
 
@@ -49,5 +50,13 @@ export default function ErrorPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+export default function ErrorPage() {
+  return (
+    <Suspense fallback={<div>Yükleniyor...</div>}>
+      <ErrorPageInner />
+    </Suspense>
   )
 }
