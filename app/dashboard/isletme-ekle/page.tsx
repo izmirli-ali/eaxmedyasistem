@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { isletmeEkle } from "@/app/actions/isletme"
+import { useRouter } from "next/navigation"
 
 // Form şeması
 const formSchema = z.object({
@@ -43,6 +44,7 @@ const formSchema = z.object({
 })
 
 export default function IsletmeEklePage() {
+  const router = useRouter()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -70,8 +72,9 @@ export default function IsletmeEklePage() {
       if (result.success) {
         toast.success("İşletme başarıyla eklendi")
         form.reset()
+        router.push("/dashboard/isletmeler")
       } else {
-        toast.error("İşletme eklenirken bir hata oluştu")
+        toast.error(result.error || "İşletme eklenirken bir hata oluştu")
       }
     } catch (error) {
       console.error("Form gönderim hatası:", error)
