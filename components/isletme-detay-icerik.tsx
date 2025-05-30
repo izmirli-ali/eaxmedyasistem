@@ -8,7 +8,6 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import {
   Phone,
   Mail,
-  Clock,
   LinkIcon,
   Star,
   Facebook,
@@ -19,6 +18,26 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageCircle,
+  Wifi,
+  Car,
+  CreditCard,
+  CalendarCheck,
+  Package,
+  Accessibility,
+  Baby,
+  Dog,
+  Cigarette,
+  Music,
+  Coffee,
+  UtensilsCrossed,
+  Tv,
+  Truck,
+  Banknote,
+  Globe,
+  CreditCardIcon,
+  Leaf,
+  Wheat,
+  Carrot,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Image } from "@/components/ui/image"
@@ -64,7 +83,7 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
   const [reviews, setReviews] = useState([])
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [reviewsError, setReviewsError] = useState<string | null>(null)
-  const [images, setImages] = useState<string[]>([])
+  const [images, setImages] = useState<{ url: string; alt: string }[]>([])
   const [currentReviewPage, setCurrentReviewPage] = useState(1)
   const reviewsPerPage = 5
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -154,8 +173,35 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
 
   // İşletme fotoğraflarını yükle
   useEffect(() => {
+    const newImages: { url: string; alt: string }[] = []
+
+    // Ana fotoğrafı ekle
+    if (isletme?.fotograf_url) {
+      newImages.push({
+        url: isletme.fotograf_url,
+        alt: `${isletme.isletme_adi} - Ana Görsel`,
+      })
+    }
+
+    // Diğer fotoğrafları ekle
     if (isletme?.fotograflar && Array.isArray(isletme.fotograflar)) {
-      setImages(isletme.fotograflar)
+      isletme.fotograflar.forEach((foto: any, index: number) => {
+        if (typeof foto === "string") {
+          newImages.push({
+            url: foto,
+            alt: `${isletme.isletme_adi} - Fotoğraf ${index + 1}`,
+          })
+        } else if (foto && foto.url) {
+          newImages.push({
+            url: foto.url,
+            alt: foto.alt || `${isletme.isletme_adi} - Fotoğraf ${index + 1}`,
+          })
+        }
+      })
+    }
+
+    if (newImages.length > 0) {
+      setImages(newImages)
     }
   }, [isletme])
 
@@ -176,11 +222,11 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
 
   // Sosyal medya verilerini tanımla
   const sosyalMedya = {
-    facebook: isletme.facebook_url || null,
-    instagram: isletme.instagram_url || null,
-    twitter: isletme.twitter_url || null,
-    linkedin: isletme.linkedin_url || null,
-    youtube: isletme.youtube_url || null,
+    facebook: isletme.facebook_url || (isletme.sosyal_medya && isletme.sosyal_medya.facebook) || null,
+    instagram: isletme.instagram_url || (isletme.sosyal_medya && isletme.sosyal_medya.instagram) || null,
+    twitter: isletme.twitter_url || (isletme.sosyal_medya && isletme.sosyal_medya.twitter) || null,
+    linkedin: isletme.linkedin_url || (isletme.sosyal_medya && isletme.sosyal_medya.linkedin) || null,
+    youtube: isletme.youtube_url || (isletme.sosyal_medya && isletme.sosyal_medya.youtube) || null,
   }
 
   // İşletme detay sayfasında yapısal veri iyileştirmeleri için koordinat bilgilerini kullanalım
@@ -199,48 +245,6 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
       }
     }
   }, [isletme])
-
-  // Yapısal veri için koordinat bilgilerini ekleyelim
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: isletme.isletme_adi,
-    description: isletme.aciklama || "",
-    image: isletme.fotograf_url || "/placeholder.svg",
-    telephone: isletme.telefon,
-    email: isletme.email || "",
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: isletme.adres || "",
-      addressLocality: isletme.ilce || "",
-      addressRegion: isletme.sehir || "",
-      addressCountry: "Türkiye",
-    },
-    // Koordinat bilgilerini ekleyelim
-    ...(coordinates && {
-      geo: {
-        "@type": "GeoCoordinates",
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-      },
-    }),
-    // Diğer bilgileri ekleyelim
-    priceRange: isletme.fiyat_araligi || "₺₺",
-    url: typeof window !== "undefined" ? window.location.href : "",
-    openingHours: isletme.calisma_saatleri || "",
-    // Hizmetleri ekleyelim
-    ...(isletme.sunulan_hizmetler && {
-      makesOffer: parseHizmetler(isletme.sunulan_hizmetler).map((service) => ({
-        "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: service,
-        },
-      })),
-    }),
-  }
-
-  // Sosyal medya paylaşım butonlarını iyileştirelim
 
   // Sosyal medya paylaşım butonları
   const SocialShareButtons = ({ url, title, description }) => {
@@ -288,6 +292,109 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
     )
   }
 
+  // Çalışma saatlerini render et
+  const renderCalismaSaatleri = () => {
+    if (!isletme.calisma_saatleri) return <p className="text-gray-500">Çalışma saatleri belirtilmemiş.</p>
+
+    const calismaSaatleri =
+      typeof isletme.calisma_saatleri === "string" ? JSON.parse(isletme.calisma_saatleri) : isletme.calisma_saatleri
+
+    if (!calismaSaatleri || Object.keys(calismaSaatleri).length === 0) {
+      return <p className="text-gray-500">Çalışma saatleri belirtilmemiş.</p>
+    }
+
+    // Günleri ve Türkçe karşılıklarını tanımla
+    const gunler = ["pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar"]
+    const gunlerTurkce = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+
+    return (
+      <div className="space-y-2">
+        {gunler.map((gun, index) => {
+          const gunData = calismaSaatleri[gun]
+          if (!gunData) return null
+
+          const acik = gunData.acik !== false
+          const acilis = gunData.acilis || "00:00"
+          const kapanis = gunData.kapanis || "00:00"
+
+          return (
+            <div key={gun} className="flex justify-between items-center py-1 border-b border-gray-100 last:border-0">
+              <span className="font-medium">{gunlerTurkce[index]}</span>
+              <span className={acik ? "text-green-600" : "text-red-500"}>
+                {acik ? `${acilis} - ${kapanis}` : "Kapalı"}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // Harita iframe'ini render et
+  const renderHaritaIframe = () => {
+    if (!isletme.harita_linki) return null
+
+    try {
+      // iframe HTML'ini güvenli bir şekilde işle
+      return <div className="h-[400px] w-full" dangerouslySetInnerHTML={{ __html: isletme.harita_linki }} />
+    } catch (error) {
+      console.error("Harita iframe işlenemedi:", error)
+      return <p className="text-gray-500">Harita görüntülenemiyor.</p>
+    }
+  }
+
+  // Özellikleri render et
+  const renderOzellikler = () => {
+    const ozellikler = [
+      { key: "wifi", icon: <Wifi className="h-4 w-4" />, label: "Wi-Fi" },
+      { key: "otopark", icon: <Car className="h-4 w-4" />, label: "Otopark" },
+      { key: "kredi_karti", icon: <CreditCard className="h-4 w-4" />, label: "Kredi Kartı" },
+      { key: "rezervasyon", icon: <CalendarCheck className="h-4 w-4" />, label: "Rezervasyon" },
+      { key: "paket_servis", icon: <Package className="h-4 w-4" />, label: "Paket Servis" },
+      { key: "engelli_erisim", icon: <Accessibility className="h-4 w-4" />, label: "Engelli Erişimi" },
+      { key: "bebek_dostu", icon: <Baby className="h-4 w-4" />, label: "Bebek Dostu" },
+      { key: "evcil_hayvan_dostu", icon: <Dog className="h-4 w-4" />, label: "Evcil Hayvan Dostu" },
+      { key: "sigara_alani", icon: <Cigarette className="h-4 w-4" />, label: "Sigara Alanı" },
+      { key: "canli_muzik", icon: <Music className="h-4 w-4" />, label: "Canlı Müzik" },
+      { key: "kahvalti", icon: <Coffee className="h-4 w-4" />, label: "Kahvaltı" },
+      { key: "aksam_yemegi", icon: <UtensilsCrossed className="h-4 w-4" />, label: "Akşam Yemeği" },
+      { key: "tv", icon: <Tv className="h-4 w-4" />, label: "TV" },
+      { key: "ucretsiz_teslimat", icon: <Truck className="h-4 w-4" />, label: "Ücretsiz Teslimat" },
+      { key: "nakit_odeme", icon: <Banknote className="h-4 w-4" />, label: "Nakit Ödeme" },
+      { key: "online_odeme", icon: <Globe className="h-4 w-4" />, label: "Online Ödeme" },
+      { key: "temassiz_odeme", icon: <CreditCardIcon className="h-4 w-4" />, label: "Temassız Ödeme" },
+      { key: "organik_urunler", icon: <Leaf className="h-4 w-4" />, label: "Organik Ürünler" },
+      { key: "glutensiz_secenekler", icon: <Wheat className="h-4 w-4" />, label: "Glutensiz Seçenekler" },
+      { key: "vegan_secenekler", icon: <Carrot className="h-4 w-4" />, label: "Vegan Seçenekler" },
+    ]
+
+    // Aktif özellikleri filtrele
+    const aktifOzellikler = ozellikler.filter((ozellik) => {
+      // Önce isletme.ozellikler objesini kontrol et
+      if (isletme.ozellikler && typeof isletme.ozellikler === "object") {
+        if (isletme.ozellikler[ozellik.key] === true) return true
+      }
+
+      // Sonra doğrudan isletme objesini kontrol et
+      return isletme[ozellik.key] === true
+    })
+
+    if (aktifOzellikler.length === 0) {
+      return <p className="text-gray-500">Özellik bilgisi belirtilmemiş.</p>
+    }
+
+    return (
+      <div className="grid grid-cols-2 gap-2" role="list" aria-label="İşletme Özellikleri">
+        {aktifOzellikler.map((ozellik) => (
+          <div key={ozellik.key} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md" role="listitem">
+            <div className="text-primary">{ozellik.icon}</div>
+            <span>{ozellik.label}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     // Mobil uyumluluk için responsive tasarım iyileştirmeleri
 
@@ -317,8 +424,8 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
                   {images.map((image, index) => (
                     <div key={index} className="keen-slider__slide">
                       <OptimizedImage
-                        src={image}
-                        alt={`${isletme.isletme_adi} - Görsel ${index + 1}`}
+                        src={image.url}
+                        alt={image.alt}
                         className="w-full h-full object-cover rounded-lg"
                       />
                     </div>
@@ -468,21 +575,44 @@ export function IsletmeDetayIcerik({ isletme }: IsletmeDetayIcerikProps) {
                   </p>
                 </div>
               )}
-              {isletme.calisma_saatleri && (
-                <div>
-                  <h4 className="font-medium" id="calisma-saatleri">
-                    Çalışma Saatleri
-                  </h4>
-                  <p className="text-gray-600 flex items-center" tabIndex={0} aria-labelledby="calisma-saatleri">
-                    <Clock className="h-4 w-4 mr-1" aria-hidden="true" />
-                    {isletme.calisma_saatleri}
-                  </p>
-                </div>
-              )}
+              <div>
+                <h4 className="font-medium" id="calisma-saatleri">
+                  Çalışma Saatleri
+                </h4>
+                {renderCalismaSaatleri()}
+              </div>
             </div>
           </CardContent>
         </Card>
-        {Object.keys(sosyalMedya).length > 0 && (
+
+        {/* Özellikler Kartı */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <h3 className="text-xl font-bold mb-4" id="isletme-ozellikleri">
+              İşletme Özellikleri
+            </h3>
+            {renderOzellikler()}
+          </CardContent>
+        </Card>
+
+        {/* Harita Kartı */}
+        {(isletme.harita_linki || (isletme.latitude && isletme.longitude)) && (
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-bold mb-4" id="konum">
+                Konum
+              </h3>
+              {renderHaritaIframe()}
+              {!isletme.harita_linki && isletme.latitude && isletme.longitude && (
+                <div className="h-[400px] w-full bg-gray-100 flex items-center justify-center">
+                  <p className="text-gray-500">Harita yükleniyor...</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {Object.keys(sosyalMedya).some((key) => sosyalMedya[key]) && (
           <Card className="mb-6">
             <CardContent className="p-6">
               <h3 className="text-xl font-bold mb-4" id="sosyal-medya">
